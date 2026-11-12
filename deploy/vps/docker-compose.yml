@@ -81,7 +81,8 @@ services:
       - traefik.http.routers.hk-ofel-v3.tls.certresolver=letsencrypt
       - traefik.http.services.hk-ofel-v3.loadbalancer.server.port=9650
 
-  # Clearing agent: started only once deployments/fuji-l1.json exists (docker compose --profile agent up -d agent).
+  # Clearing agent + auditor, and the public API (health, judge faucet relay) at https://ofel-api.201-18-198-162.sslip.io.
+  # Keys (OFEL_AGENT_PK, OFEL_FAUCET_PK) in .env.agent (mode 600). Start: docker compose --profile agent up -d agent house
   agent:
     profiles: [agent]
     build: { context: ./app, dockerfile: deploy/vps/Dockerfile.agent }
@@ -92,14 +93,42 @@ services:
     memswap_limit: 1500m
     cpus: 0.75
     env_file: [.env.agent]
-    environment:
+    environment: &agentenv
       OFEL_NETWORK: fuji-l1
       OFEL_PCHAIN_URL: https://api.avax-test.network/ext/bc/P
       OFEL_VALIDATOR_URIS: http://ofel-l1-v1-1:9650,http://ofel-l1-v2-1:9650,http://ofel-l1-v3-1:9650
       OFEL_SUBNET_ID: ${OFEL_SUBNET_ID:-}
       OFEL_BLOCKCHAIN_ID: ${OFEL_CHAIN_ID:-}
+      OFEL_BATCH_SECONDS: "90"
+      OFEL_API_PORT: "8790"
     volumes: ["./circuits:/app/web/public/circuits:ro"]
     depends_on: [v1, v2, v3]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hk-ofel-api.rule=Host(`ofel-api.201-18-198-162.sslip.io`) && PathPrefix(`/api/`)
+      - traefik.http.routers.hk-ofel-api.entrypoints=https
+      - traefik.http.routers.hk-ofel-api.tls=true
+      - traefik.http.routers.hk-ofel-api.tls.certresolver=letsencrypt
+      - traefik.http.services.hk-ofel-api.loadbalancer.server.port=8790
+
+  # House liquidity (scripts/house.ts): quotes blind into batches where another wallet sealed an order.
+  # Key OFEL_HOUSE_PK in .env.house (mode 600). It ignores the scripted e2e traders (OFEL_HOUSE_IGNORE).
+  house:
+    profiles: [agent]
+    image: hk-ofel-agent:latest
+    restart: unless-stopped
+    networks: [coolify]
+    mem_limit: 768m
+    memswap_limit: 1g
+    cpus: 0.5
+    env_file: [.env.house]
+    environment:
+      <<: *agentenv
+      OFEL_API_PORT: ""
+      OFEL_HOUSE_IGNORE: 0xA236AE4f4e75d47e1c4793F1055D834f6C3728bC,0x2ec3853CdB2de1b06FE0D07fB5Fb8F97884EBd03
+    command: ["node", "house.ts"]
+    volumes: ["./circuits:/app/web/public/circuits:ro"]
+    depends_on: [agent]
 
 networks:
   coolify:
