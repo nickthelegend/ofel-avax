@@ -2,8 +2,8 @@
 
 **Name:** Ofel (Hebrew אופל, "deep darkness")
 
-**One-liner:** Private block trading on Avalanche. Your order is sealed before its price exists, and your size stays
-private for good.
+**One-liner:** Trade size without being front-run. Private block trading for funds, DAOs and treasuries: your order
+stays sealed until the batch closes, and your size is never made public. On its own Avalanche L1.
 
 **Event:** Team1 India "Build Anything on Avalanche" speedrun. The deadline is Nov 14 22:59 UTC.
 

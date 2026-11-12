@@ -8,6 +8,13 @@
 
 Style line used in every prompt: "smoked obsidian glass 3D render in #11130f with #ebe5d8 details and a soft #f0b9a0 rim light, a thin glowing #f0b9a0 seam of light, soft studio lighting, crisp reflections, rounded bevelled edges, gentle toy-like proportions, centred, transparent background (no background, no ground shadow), square 1024x1024, no text, no letters, no logos."
 
+Ship round (Nov 12–13), same style line, one fresh ChatGPT chat: **block** (three sealed envelopes bound by a band of
+first light, closed eyes on the top one; landing hero, 880 px), **hourglass** (the batch clock, step 2), **scale** (one
+fair price, step 3), **desk** (obsidian tablet with a first-light price line, "try it" section), **proof** (wax-seal
+medallion with a first-light check, "check it yourself"), and **og-bg** (1536×1024 scene for the social card;
+`scripts/qa/og.mjs` lays real type over it into `web/public/og.jpg`, so no generated text). Each file is trimmed,
+padded square and under 75 KB; every `<img>` has width and height.
+
 Files: `web/public/art/<name>.webp` (640 px, transparent).
 
 3D art generated with ChatGPT

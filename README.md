@@ -1,6 +1,7 @@
 # Ofel
 
-**Private block trading on Avalanche. Your order is sealed before its price exists, and your size stays private for good.**
+**Trade size without being front-run.** Private block trading for funds, DAOs and treasuries: your order stays sealed
+until the batch closes, and your size is never made public. On its own Avalanche L1.
 
 Ofel (Hebrew אופל, "deep darkness") is a sealed-batch trading desk for funds, DAOs and treasuries that move size and
 don't want to be front-run or watched. It runs on its own Avalanche L1. The batch seal is held by that L1's validators,
@@ -78,6 +79,7 @@ compliance.
 | | |
 |---|---|
 | Desk | **https://ofel-desk.vercel.app** (production build, no keys in it; the Test wallet key is made in your browser) |
+| Screen audit | every hosted route and state at 1440 and 375, before and after the ship round: [docs/SCREEN-AUDIT.md](docs/SCREEN-AUDIT.md) |
 | L1 | subnet `soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt`, blockchain `29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd`, Subnet-EVM v1.15.3, chain ID 77077, OFEL, Warp on, `k=3 α=2` |
 | L1 RPC (warp API on) | `https://ofel-v{1,2,3}.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc` |
 | Agent API | `https://ofel-api.201-18-198-162.sslip.io/api/health`, `POST /api/faucet` |

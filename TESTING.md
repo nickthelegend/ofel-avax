@@ -13,7 +13,8 @@ them is mocked.
 | Live end-to-end, local | `pnpm test:live` (scripts/e2e.ts) | 31 live checks | 31/31 pass | Yes, the local L1 |
 | Hosted judge path | browser, https://ofel-desk.vercel.app, fresh Test wallet | faucet → register → deposit → seal → clear → pay-in → settle → bond | done, tx hashes in `deployments/fuji-l1.json` `hostedJudgeRun` | Yes, Fuji L1 |
 | Go/no-go spike | `node scripts/spike.ts` | 9 checks (docs/spike-output.txt) | GO | Yes |
-| UI screenshots (hosted) | `OFEL_QA_URL=https://ofel-desk.vercel.app OFEL_QA_NET=fuji-l1 node --env-file=../../.env.fuji scripts/qa/shots.mjs` | 9 routes × 2 widths = 18 | 0 px overflow, 0 console errors | Yes, the hosted desk on the Fuji L1 |
+| UI screenshots (hosted, ship round Nov 12–13) | `OFEL_QA_URL=https://ofel-desk.vercel.app OFEL_QA_NET=fuji-l1 OFEL_QA_BATCH=6 node --env-file=.env.fuji scripts/qa/shots.mjs` | 12 routes and states × 2 widths = 24 | 0 px overflow, 0 console errors | Yes, the hosted desk on the Fuji L1 |
+| Screen audit | `docs/SCREEN-AUDIT.md` | every route and state at 1440 and 375, scored before/after | 4 phone table screens and 3 un-reshot states at 8.5, the rest 9 | — |
 
 ## What the Foundry suite covers
 - **Early open:** `closeBatch` before T reverts with `TooEarly`, and no Warp message is emitted. A second close reverts

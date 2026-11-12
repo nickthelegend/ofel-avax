@@ -3,14 +3,18 @@
 Honest self-score on Nov 12, 2026 (after the Fuji L1 went live), against the Avalanche Speedrun weights. Target 9/10.
 "Before" is the state at the start of this round: everything ran on a local network only.
 
-| Criterion (weight) | Before | Now | Why |
-|---|---|---|---|
-| Does it work (30%) | 7.5 | 8.8 | The L1 is real on Fuji (ConvertSubnetToL1, 3 PoA validators, validator manager initialised) and the desk is hosted. A fresh wallet on https://ofel-desk.vercel.app reached a settled fill with zero setup: Test wallet, one tap for faucet + eERC key + deposits, sealed buy, the house's blind quote, clear at 31.45 with 3/3 signatures, private pay-in, payout, bond back (`hostedJudgeRun`). The e2e passes 31/31 on Fuji, including a batch opened with 2/3 while a validator was stopped. Not higher: the first eERC proof takes a few seconds on a slow laptop, and all three validators run on one VPS, so a VPS outage stops the L1. |
-| Idea and originality (25%) | 9 | 9 | Unchanged: the L1's own validator set as a timelock (IBE keyed by Warp BLS signatures), so no operator can read the book before T, plus sizes that never open. |
-| Technical depth (20%) | 9 | 9.2 | Added the real L1 lifecycle: P-Chain fee balances via avalanchejs (C→P export, import, IncreaseL1ValidatorBalanceTx, equalised so all three run out together), an on-chain faucet with a relay, and a house that quotes without reading orders and settles over eERC like any trader. |
-| Avalanche fit (15%) | 7.5 | 9 | Own L1 on Fuji with Warp at the core, Ava Labs eERC unmodified for balances and legs (auditor key used), ACP-77 validator fees handled. Still no ICM/ICTT bridge from the C-Chain. |
-| Demo and communication (10%) | 7.5 | 7.5 | Screenshots at 1440 and 375 of every hosted route (`orchestration/shots/avax-ofel/fuji/`), README with every Fuji tx. The film is not recorded yet. |
-| **Weighted** | **8.1** | **8.8** | |
+Ship round (Nov 12–13): screen-by-screen audit of every hosted route and state at 1440 and 375
+([docs/SCREEN-AUDIT.md](docs/SCREEN-AUDIT.md)), the landing re-positioned for a non-crypto judge, a new art set and OG
+card. Re-score in the last column.
+
+| Criterion (weight) | Before | Nov 12 | Ship round | Why (ship round) |
+|---|---|---|---|---|
+| Does it work (30%) | 7.5 | 8.8 | 8.9 | A signed-out judge now gets "Start with a test wallet" on the ticket instead of a disabled button; a new wallet sees "No orders yet" instead of a pointless decrypt; auditor legs name their asset. Same limits as before (one VPS for all three validators). |
+| Idea and originality (25%) | 9 | 9 | 9 | Unchanged. |
+| Technical depth (20%) | 9 | 9.2 | 9.2 | Unchanged. |
+| Avalanche fit (15%) | 7.5 | 9 | 9 | Unchanged; the landing now says why Avalanche in the first screen and links the L1 and its P-Chain txs. |
+| Demo and communication (10%) | 7.5 | 7.5 | 8 | The first screen says who it's for and what they get in one line; phone layouts fixed; OG card. The film is still not recorded. |
+| **Weighted** | **8.1** | **8.8** | **8.9** | |
 
 ## What is left for 9/10, in order of value
 
