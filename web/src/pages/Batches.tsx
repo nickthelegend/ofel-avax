@@ -104,7 +104,7 @@ function Detail({ id }: { id: bigint }) {
       </div>
       <section className="panel panel-b" style={{ marginBottom: 16 }}><Steps b={x} now={now} /></section>
 
-      <div className="grid-desk" style={{ gridTemplateColumns: "minmax(0,1fr) 420px" }}>
+      <div className="grid-detail">
         <section className="panel">
           <div className="panel-h"><h3>Orders as the chain stores them</h3><span className="muted" style={{ fontSize: 13 }}>Sizes are Pedersen commitments</span></div>
           {orders.error && <div className="panel-b"><ErrorBox>{orders.error}</ErrorBox></div>}

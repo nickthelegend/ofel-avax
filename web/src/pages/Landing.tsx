@@ -1,5 +1,5 @@
 import { cfg } from "../lib/config";
-import { recentBatches, validatorStatus } from "../lib/chain";
+import { batchesWithOrders, validatorStatus } from "../lib/chain";
 import { useLive } from "../lib/hooks";
 import { units } from "../lib/format";
 import { Link } from "../components/ui";
@@ -21,9 +21,9 @@ function Cell({ v }: { v: string }) {
 }
 
 export function Landing() {
-  const batches = useLive(() => recentBatches(30), [], 5000);
+  const batches = useLive(() => batchesWithOrders(60, 400), [], 8000);
   const vals = useLive(validatorStatus, [], 8000);
-  const cleared = batches.data?.filter((b) => b.state === 3) ?? [];
+  const cleared = batches.data?.filter((b) => b.state === 3 && b.price > 0n) ?? [];
   const last = cleared.find((b) => b.price > 0n);
   const sealedTotal = batches.data?.reduce((s, b) => s + b.orderCount, 0) ?? 0;
   const live = !batches.error && batches.data;
@@ -53,7 +53,7 @@ export function Landing() {
       <section className="section" aria-label="Live">
         <div className="proof">
           <div>
-            <div className="muted" style={{ fontSize: 13 }}>Batches cleared</div>
+            <div className="muted" style={{ fontSize: 13 }}>Batches crossed</div>
             <div className="v num">{live ? cleared.length : "—"}</div>
           </div>
           <div>

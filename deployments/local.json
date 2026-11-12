@@ -74,5 +74,41 @@
     },
     "checks": 31,
     "finishedAt": "2026-11-12T10:45:55.870Z"
+  },
+  "webRun": {
+    "batchId": "50",
+    "via": "web desk (QA build, local signers) for sealing and pay-ins; clearing agent for close/reveal/clear/payouts",
+    "orders": [
+      "0x4756bdabf3f57080f0437de000699ad6738eb017b946b9857cc0ebed2e92a263",
+      "0xc444b43716feb9cc9978bbde7a2ecc3bb28be480d64252523b39e5635f79c2e8"
+    ],
+    "price": "3135",
+    "statuses": [
+      6,
+      6
+    ],
+    "clearTx": "0xe4bb5549a5202e6aa4ed6c54697e36238a2976a791bba92c10d4ae7c40f89145",
+    "eercLegs": [
+      {
+        "from": "0x8aB0d6bc87c80a7241fa7b9CFEDe7eF53fab90De",
+        "to": "0x9107fE56C0e5F15b1183b27F1F2d92EB323b26cA",
+        "tx": "0x07fa16d27a6350d5904f4aa214150a614d5a1edd49e768fc4e9bf249714633fd"
+      },
+      {
+        "from": "0xA08B96d2076E96321051697fDE922Ac7123d0D06",
+        "to": "0x9107fE56C0e5F15b1183b27F1F2d92EB323b26cA",
+        "tx": "0x49194ae9293d2938b8403aa94fd1eaafc81789f0e43d68a551d2875fede75fbe"
+      },
+      {
+        "from": "0x9107fE56C0e5F15b1183b27F1F2d92EB323b26cA",
+        "to": "0xA08B96d2076E96321051697fDE922Ac7123d0D06",
+        "tx": "0xd62527e9a9ec2c94db28624aeaae6e8f95dedec1c1693dd32d71edfece022c11"
+      },
+      {
+        "from": "0x9107fE56C0e5F15b1183b27F1F2d92EB323b26cA",
+        "to": "0x8aB0d6bc87c80a7241fa7b9CFEDe7eF53fab90De",
+        "tx": "0x33e42e55a77f70535b0e4cb8263ed493093ed07df592839ccefe5b466adb7616"
+      }
+    ]
   }
 }

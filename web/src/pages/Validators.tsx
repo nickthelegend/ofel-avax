@@ -17,7 +17,7 @@ export function Validators() {
         </div>
       </div>
       <section className="panel" style={{ marginBottom: 16, overflow: "hidden" }}>
-        <div className="book-hero" style={{ gridTemplateColumns: "minmax(0,1fr) 220px" }}>
+        <div className="book-hero">
           <div>
             <div className="muted">Online now</div>
             <div className="big num" style={{ margin: "6px 0 12px" }}>

@@ -1,0 +1,7 @@
+{
+  "network": "fuji",
+  "status": "NOT DEPLOYED",
+  "blockedOn": "A Fuji L1 needs validators that stay up through judging (Nov 16-18). Two options are in scripts/deploy-l1-fuji.md: Builder Console hosted nodes (an account that Nick must create or choose) or three self-hosted Docker validators on Nick's VPS (Nick must answer whether the VPS can run them). Nothing was bought and no account was created.",
+  "cChainContracts": "none: Ofel's seal needs its own L1 validator set; the Fuji C-Chain has no app-readable small validator set, so a C-Chain-only deployment would not be the product",
+  "estimatedCost": "about 1-2 test AVAX for ConvertSubnetToL1 + validator balances (Fuji, from a faucet or the deployer), plus negligible gas"
+}

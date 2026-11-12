@@ -37,7 +37,7 @@ function Balances() {
   );
   return (
     <section className="panel" style={{ overflow: "hidden" }}>
-      <div className="book-hero" style={{ gridTemplateColumns: "minmax(0,1fr) 200px" }}>
+      <div className="book-hero">
         <div>
           <div className="muted">Private balances · eERC on the Ofel L1</div>
           {!w.address && <p className="muted">Connect a wallet to read your encrypted balances.</p>}
