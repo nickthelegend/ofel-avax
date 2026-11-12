@@ -19,5 +19,60 @@
     "http://127.0.0.1:9656",
     "http://127.0.0.1:9658"
   ],
-  "pchain": "http://127.0.0.1:9650/ext/bc/P"
+  "pchain": "http://127.0.0.1:9650/ext/bc/P",
+  "e2e": {
+    "startedAt": "2026-11-12T10:42:18.186Z",
+    "batchSeconds": 45,
+    "batchA": {
+      "batchId": "3",
+      "orders": [
+        "0x161be3eec1dd44373ce72c435c047250029ad13ffd3be8f8e52f89ff0290331a",
+        "0x5eaaadbe022fe86263a3b1b28256441f8ed619a425cb58a060ae91ed5dd53c0c"
+      ],
+      "cleared": {
+        "price": "3135",
+        "buyTotal": "125000",
+        "sellTotal": "90000"
+      },
+      "payIns": [
+        "0x7c2ba5bc49fbdc167479d140f37abe00cc9a045da6ec0bb43cfc9c9d0c850fa6",
+        "0x5953c9b69a66def8f59e879d1740c464d5009620ac3285ef3d5a0f35eadf6da0"
+      ],
+      "payouts": [
+        "0xfb73ad16a7b9cb4aac3e51a2c2ce4b39b052f136965e961608773231fd6c6bfb",
+        "0x55fbad629d112874b79386e3a677f9bf1a42b34ca856b4ebb35ae95bd085f685"
+      ],
+      "bondClaims": [
+        "0x60f834308ca0e42a944dec6cde2b716bd928df41b5b8a7efa4270e6dcdaf6b77",
+        "0xacf165036e2132741a70ce3209c15020ccff4d428fbbf54bb759c6b9f75761e2"
+      ]
+    },
+    "validatorStopped": "NodeID-MNFfnXYxqu6RwKWJHcjiqspQywFaVETww",
+    "batchB": {
+      "batchId": "5",
+      "orders": [
+        "0xc43b2c78459a1385022316306850b7dd7daa3c28f1dc17c0ffdb694a126c6f72",
+        "0xb496a2174ff1f7d1d9bf1630570478a2eba3c27eee43b5e6feef6a4119ae355b"
+      ],
+      "cleared": {
+        "price": "3135",
+        "buyTotal": "125000",
+        "sellTotal": "90000"
+      },
+      "payIns": [
+        "0xd5657b0af965b288843ce6f0b5d0258d0dd0f5281d2d61154de8cbe168233ed1",
+        "0xebcaf8d4efb1bf79b03ff7b02562b1b322c9776a5572e1fe38a406e59adfd82d"
+      ],
+      "payouts": [
+        "0xd9ed7092b826fbdae002c819129dee1860ef4c4d696d5bf1ee40c03baa47ad39",
+        "0xc6ed54c73029ea32d86c696581cf77c72ef191262257945df66c28b7c9e782e2"
+      ],
+      "bondClaims": [
+        "0x3c0b5bb72aefb6fc1803f6f22448b353bb61ad2f84a94d67b947786a8dd0bbc5",
+        "0xa522d8fd5a14254c9c9c0c2a49d4b59f8964cb1ff506d84a7595a51045b42d86"
+      ]
+    },
+    "checks": 31,
+    "finishedAt": "2026-11-12T10:45:55.870Z"
+  }
 }
