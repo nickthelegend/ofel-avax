@@ -61,5 +61,8 @@ export async function ofelClears(): Promise<Clear[]> {
   }));
 }
 
+/** Clears on the market-priced book (the house follows Chainlink from cfg.repricedFrom on). */
+export const priced = (c: { batchId: bigint }) => c.batchId >= cfg.repricedFrom;
+
 export const usd = (v: number | undefined | null, dp = 2) => (v == null || !Number.isFinite(v) ? "—" : `$${v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp })}`);
 export const fix = (v: number, dp = 2) => v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });

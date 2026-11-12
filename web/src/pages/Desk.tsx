@@ -9,7 +9,7 @@ import { useLive, useNow } from "../lib/hooks";
 import { countdown, short, units, utc } from "../lib/format";
 import { tryOpenEarly, type EarlyAttempt } from "../lib/orders";
 import { fetchCandles, INTERVALS, type Interval } from "../lib/candles";
-import { chainlinkAvax, feedUrl, fix, ofelClears, usd, type Clear } from "../lib/market";
+import { chainlinkAvax, feedUrl, fix, ofelClears, priced, usd, type Clear } from "../lib/market";
 import { DeskChart, type Ohlc } from "../components/CandleChart";
 import { Ticket, type TicketDraft } from "../components/Ticket";
 import { DeskTabs } from "../components/DeskTabs";
@@ -23,7 +23,8 @@ export function Desk() {
   const batches = useLive(() => recentBatches(12), [], 3000);
   const current = batches.data?.[0];
   const vals = useLive(validatorStatus, [], 8000);
-  const clears = useLive(ofelClears, [current?.id, current?.state], 20000);
+  const allClears = useLive(ofelClears, [current?.id, current?.state], 20000);
+  const clears = { data: allClears.data?.filter(priced), error: allClears.error };
   const ref = useLive(() => chainlinkAvax(24), [], 60000);
   const [iv, setIv] = useState<Interval>(() => {
     try {
@@ -50,7 +51,7 @@ export function Desk() {
       <MarketBar current={current} now={now} vals={vals.data} valsErr={vals.error} lastClear={lastClear} refPrice={ref.data} refErr={ref.error} candles={candles.data} iv={iv} setIv={setIv} l1Err={batches.error} />
       <ChartPanel iv={iv} candles={candles.data} candlesErr={candles.error} rounds={ref.data?.rounds ?? []} clears={clears.data ?? []} draft={draft} />
       <BookPanel batch={current} prev={batches.data?.[1]} now={now} vals={vals.data} refreshKey={refreshKey} />
-      <Ticket batch={current} lastClear={lastClear} onDraft={setDraft} onSealed={() => setRefreshKey((k) => k + 1)} />
+      <Ticket batch={current} lastClear={lastClear} refPrice={ref.data?.price} onDraft={setDraft} onSealed={() => setRefreshKey((k) => k + 1)} />
       <DeskTabs batches={batches.data} clears={clears.data} clearsErr={clears.error} lastClear={lastClear} refreshKey={refreshKey} />
     </main>
   );
@@ -117,7 +118,7 @@ function MarketBar({
         <span>{current ? `Batch #${current.id} ${open ? "seals in" : current.state === 1 ? "closing" : "opening next"}` : "Batch"}</span>
         <b className="num" data-film="countdown">{l1Err ? "L1 offline" : current ? (open ? countdown(left) : "00:00") : "…"}</b>
       </div>
-      <div className="mb-cell">
+      <div className="mb-cell mb-vals">
         <span>Validators online</span>
         <b className="num" title={valsErr}>{online !== undefined ? `${online}/${vals!.length}` : valsErr ? "retrying" : "…"}</b>
       </div>
@@ -142,7 +143,7 @@ function ChartPanel({ iv, candles, candlesErr, rounds, clears, draft }: { iv: In
     <section className="pnl chartp" aria-label="Price chart" data-film="chart">
       <header className="pnl-tabs">
         <span className="pnl-tab on">AVAX / USD</span>
-        <span className="pnl-tab on sub">tAVAX / tUSDC</span>
+        <span className="pnl-tab on sub">Ofel clears</span>
         {sel && (
           <span className="ohlc mono hide-sm">
             O {fix(sel.o, 3)} H {fix(sel.h, 3)} L {fix(sel.l, 3)} <b className={sel.c >= sel.o ? "up" : "down"}>C {fix(sel.c, 3)}</b>
@@ -177,8 +178,8 @@ function ChartPanel({ iv, candles, candlesErr, rounds, clears, draft }: { iv: In
         )}
       </div>
       <p className="chart-foot mono">
-        Top: {candles ? <a href={candles.source.url} target="_blank" rel="noreferrer">{candles.source.name} {candles.source.pair}</a> : "exchange"} {iv} candles and{" "}
-        <a href={feedUrl} target="_blank" rel="noreferrer">Chainlink AVAX/USD on Fuji</a>. Bottom: tAVAX/tUSDC, the Ofel L1's test pair, at each batch's clearing price (BatchCleared on OfelBook).
+        {candles ? <a href={candles.source.url} target="_blank" rel="noreferrer">{candles.source.name} {candles.source.pair}</a> : "Exchange"} {iv} candles,{" "}
+        <a href={feedUrl} target="_blank" rel="noreferrer">Chainlink AVAX/USD on Fuji</a> (step line) and each Ofel batch's clearing price (dots, BatchCleared on the L1). The house quotes ±0.15% around Chainlink from batch #{cfg.repricedFrom.toString()}; earlier batches cleared at a fixed ~31 tUSDC test quote and are only in the Batches tab.
       </p>
     </section>
   );

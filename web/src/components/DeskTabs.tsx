@@ -1,6 +1,7 @@
 // The desk's bottom tables: your orders (with P&L), the tape of recent clears, batches, private balances, auditor.
 import { useEffect, useState, type ReactNode } from "react";
 import type { Batch } from "../lib/chain";
+import { cfg } from "../lib/config";
 import { useNow } from "../lib/hooks";
 import { ago, countdown, units, utc } from "../lib/format";
 import { fix, type Clear } from "../lib/market";
@@ -68,7 +69,7 @@ function Tape({ clears, err }: { clears?: Clear[]; err?: string }) {
         <Skel h={36} />
       </div>
     );
-  if (!clears.length) return <State kind="empty" art="scale" title="No batch has crossed yet">The first clearing price lands here.</State>;
+  if (!clears.length) return <State kind="empty" art="scale" title="No batch has crossed at market prices yet">The house follows Chainlink from batch #{cfg.repricedFrom.toString()}; the first clear from then on lands here. Older clears are in the Batches tab.</State>;
   const rows = [...clears].reverse();
   return (
     <>
@@ -109,7 +110,7 @@ function Tape({ clears, err }: { clears?: Clear[]; err?: string }) {
           {all ? "Show fewer" : `Show all ${rows.length} clears`}
         </button>
       )}
-      <p className="form-note pad-x">After the close each order's side and limit open on chain; sizes stay commitments. Only the batch totals are proven and public.</p>
+      <p className="form-note pad-x">After the close each order's side and limit open on chain; sizes stay commitments. Only the batch totals are proven and public. Clears from batch #{cfg.repricedFrom.toString()} on, when the house started quoting around Chainlink; earlier ones are in the Batches tab.</p>
     </>
   );
 }

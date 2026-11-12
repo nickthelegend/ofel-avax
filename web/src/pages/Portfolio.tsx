@@ -9,7 +9,7 @@ import { useLive } from "../lib/hooks";
 import { units } from "../lib/format";
 import { myOrders, type MyRow } from "../lib/orders";
 import { claimBond, payIn, payInLeg, payInOnChain } from "../lib/settle";
-import { fix, ofelClears, type Clear } from "../lib/market";
+import { fix, ofelClears, priced, type Clear } from "../lib/market";
 import { useWallet } from "../lib/wallet";
 import { Amount, AvaxDisc, Hash, Icon, Link, Skel, State, StatusPill, UsdcDisc } from "../components/ui";
 
@@ -132,7 +132,9 @@ function SettleCell({ r, onDone }: { r: MyRow; onDone: () => void }) {
 }
 
 function PnlSummary({ rows, mark }: { rows: MyRow[]; mark?: Clear }) {
-  const fills = rows.filter((r) => r.fill);
+  // Only fills on the market-priced book are marked; fills against the old fixed test quote would distort the P&L.
+  const fills = rows.filter((r) => r.fill && priced({ batchId: r.batch.id }));
+  const old = rows.filter((r) => r.fill && !priced({ batchId: r.batch.id })).length;
   const bought = fills.filter((r) => r.mine.side === BUY).reduce((s, r) => s + Number(r.fill!.base) / 100, 0);
   const sold = fills.filter((r) => r.mine.side !== BUY).reduce((s, r) => s + Number(r.fill!.base) / 100, 0);
   const pnl = mark ? fills.reduce((s, r) => s + (Number(r.fill!.base) / 100) * (r.mine.side === BUY ? mark.price - Number(r.batch.price) / 100 : Number(r.batch.price) / 100 - mark.price), 0) : null;
@@ -147,7 +149,7 @@ function PnlSummary({ rows, mark }: { rows: MyRow[]; mark?: Clear }) {
         <span className="label">P&amp;L at last clear</span>
         <b className={`num ${tone}`}>{pnl == null ? "—" : `${pnl > 0.005 ? "+" : pnl < -0.005 ? "−" : ""}${fix(Math.abs(pnl))} tUSDC`}</b>
       </div>
-      {mark && <p className="form-note">Fills marked at batch #{mark.batchId.toString()}'s {fix(mark.price)} tUSDC. Sizes come from your own decrypted orders; the chain never shows them.</p>}
+      {mark && <p className="form-note">Fills marked at batch #{mark.batchId.toString()}'s {fix(mark.price)} tUSDC. Sizes come from your own decrypted orders; the chain never shows them.{old ? ` ${old} fill${old === 1 ? "" : "s"} from before batch #${cfg.repricedFrom} (old fixed test quote) listed below but not marked.` : ""}</p>}
     </div>
   );
 }
@@ -162,7 +164,7 @@ export function MyOrdersTable({ refreshKey = 0, lastClear }: { refreshKey?: numb
     [w.address, unlocked, k, refreshKey, batches.data?.map((b) => `${b.id}:${b.state}:${b.revealedCount}`).join(",")],
     0,
   );
-  const st = useLive(() => (lastClear ? Promise.resolve(lastClear) : ofelClears().then((c) => c.at(-1))), [lastClear?.batchId], 0);
+  const st = useLive(() => (lastClear ? Promise.resolve(lastClear) : ofelClears().then((c) => c.filter(priced).at(-1))), [lastClear?.batchId], 0);
   if (!w.address) return <ConnectState what="orders" />;
   if (!unlocked)
     return (
@@ -216,7 +218,7 @@ export function MyOrdersTable({ refreshKey = 0, lastClear }: { refreshKey?: numb
 
 export function Portfolio() {
   const clears = useLive(ofelClears, [], 30000);
-  const last = clears.data?.at(-1);
+  const last = clears.data?.filter(priced).at(-1);
   return (
     <main className="order" id="main">
       <header className="board-head">

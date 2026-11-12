@@ -5,7 +5,7 @@ import { batchesWithOrders, recentBatches, validatorStatus } from "../lib/chain"
 import { useLive, useNow } from "../lib/hooks";
 import { countdown, short, units, utc } from "../lib/format";
 import { fetchCandles, INTERVALS } from "../lib/candles";
-import { chainlinkAvax, fix, ofelClears, usd } from "../lib/market";
+import { chainlinkAvax, fix, ofelClears, priced, usd } from "../lib/market";
 import { DeskChart } from "../components/CandleChart";
 import { Ext, Hash, Icon, Link, Logo, Pair } from "../components/ui";
 import fujiStatus from "../../../deployments/fuji.json";
@@ -20,7 +20,8 @@ const Art = ({ src, className }: { src: string; className?: string }) => (
 function DeskPreview() {
   const now = useNow();
   const head = useLive(() => recentBatches(1), [], 4000);
-  const clears = useLive(ofelClears, [], 30000);
+  const clearsAll = useLive(ofelClears, [], 30000);
+  const clears = { data: clearsAll.data?.filter(priced) };
   const ref = useLive(() => chainlinkAvax(24), [], 60000);
   const candles = useLive(() => fetchCandles("AVAX", "5m", 120), [], 30000);
   const b = head.data?.[0];
@@ -103,7 +104,7 @@ export function Landing() {
   const clears = useLive(ofelClears, [], 30000);
   const vals = useLive(validatorStatus, [], 10000);
   const ref = useLive(() => chainlinkAvax(4), [], 60000);
-  const last = clears.data?.at(-1);
+  const last = clears.data?.filter(priced).at(-1);
   const sealedTotal = batches.data?.reduce((s, b) => s + b.orderCount, 0);
   const lastWithOrders = batches.data?.[0];
   const pTxs = cfg.fuji ? fujiStatus.pChainTxs : [];

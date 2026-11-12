@@ -38,6 +38,8 @@ export const cfg = {
   faucet: dep.faucet as Hex | undefined,
   house: dep.house as Hex | undefined,
   api: dep.api,
+  /** First batch whose house quote follows Chainlink AVAX/USD; earlier batches cleared against a fixed ~31 tUSDC quote. */
+  repricedFrom: BigInt(((dep as unknown as { houseQuote?: { pricedFromBatch?: string } }).houseQuote?.pricedFromBatch) ?? "0"),
   /** Avalanche Explorer pages for P-Chain transactions (the L1's own EVM txs have no hosted explorer). */
   pTx: (id: string) => `https://subnets-test.avax.network/p-chain/tx/${id}`,
   l1Page: `https://subnets-test.avax.network/subnets/${dep.subnetID}`,

@@ -19,8 +19,9 @@ export interface TicketDraft {
 }
 
 const PRESETS = [100, 500, 1000, 2500];
-// Starting limits per side: a buyer's cap sits above the house's ask and a seller's floor below its bid.
-const DEFAULT_LIMIT = { [BUY]: "31.50", [SELL]: "31.20" } as Record<Side, string>;
+// Starting limits follow the live Chainlink AVAX/USD price: a buyer's cap 0.5% above it, a seller's floor 0.5% below,
+// so both cross the house's ±0.15% quote. Once you type a limit, it stays yours.
+const autoLimit = (side: Side, p?: number) => (p ? (side === BUY ? Math.ceil(p * 1.005 * 100) / 100 : Math.floor(p * 0.995 * 100) / 100).toFixed(2) : "");
 const SIZE_STEP = 100;
 const LIMIT_STEP = 0.05;
 
@@ -44,13 +45,15 @@ function saveSeal(a: string, r: SealResult) {
   }
 }
 
-export function Ticket({ batch, lastClear, onDraft, onSealed }: { batch?: Batch; lastClear?: Clear; onDraft: (d: TicketDraft) => void; onSealed: () => void }) {
+export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batch?: Batch; lastClear?: Clear; refPrice?: number; onDraft: (d: TicketDraft) => void; onSealed: () => void }) {
   const w = useWallet();
   const now = useNow();
   const setup = useSetupState();
   const [side, setSide] = useState<Side>(BUY);
-  const [size, setSize] = useState("1250");
-  const [limit, setLimit] = useState(DEFAULT_LIMIT[BUY]);
+  const [size, setSize] = useState("1000");
+  const [typed, setTyped] = useState<string>();
+  const limit = typed ?? autoLimit(side, refPrice);
+  const setLimit = (v: string) => setTyped(v);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
   const [done, setDone] = useState<SealResult | undefined>(() => loadSeal(w.address));
@@ -62,7 +65,7 @@ export function Ticket({ batch, lastClear, onDraft, onSealed }: { batch?: Batch;
 
   const pickSide = (x: Side) => {
     setSide(x);
-    if (limit === DEFAULT_LIMIT[side]) setLimit(DEFAULT_LIMIT[x]);
+    if (typed === undefined || typed === autoLimit(side, refPrice)) setTyped(undefined);
   };
   const left = batch ? Number(batch.closeAt) - now : 0;
   const open = batch?.state === 1 && left > 2;
@@ -134,11 +137,10 @@ export function Ticket({ batch, lastClear, onDraft, onSealed }: { batch?: Batch;
             <em>tUSDC</em>
             <button type="button" className="step" aria-label="0.05 higher" onClick={() => setLimit((lim + LIMIT_STEP).toFixed(2))}>+</button>
           </div>
-          {lastClear && (
-            <small className="dim">
-              Last clear <button type="button" className="link" onClick={() => setLimit(lastClear.price.toFixed(2))}>{lastClear.price.toFixed(2)}</button> in batch #{lastClear.batchId.toString()}
-            </small>
-          )}
+          <small className="dim">
+            {refPrice ? <>Chainlink AVAX/USD {refPrice.toFixed(3)}{typed !== undefined && <> · <button type="button" className="link" onClick={() => setTyped(undefined)}>follow it</button></>}</> : "Waiting for the Chainlink price…"}
+            {lastClear && <> · last clear {lastClear.price.toFixed(2)} (#{lastClear.batchId.toString()})</>}
+          </small>
         </label>
         <dl className="summ">
           <div>

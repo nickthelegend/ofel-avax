@@ -33,9 +33,16 @@
   },
   "house": "0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81",
   "houseQuote": {
-    "bid": "31.30",
-    "ask": "31.40",
-    "sizeTAVAX": "1000"
+    "source": "Chainlink AVAX/USD on Fuji (0x5498BB86BC934c8D34FDA08E81D444153d0D06aD)",
+    "spreadBps": 15,
+    "sizeTAVAX": "1000",
+    "pricedFromBatch": "210",
+    "since": "2026-11-12T20:51Z",
+    "before": {
+      "bid": "31.30",
+      "ask": "31.40",
+      "note": "fixed quote used by batches 1-209"
+    }
   },
   "api": "https://ofel-api.201-18-198-162.sslip.io",
   "e2e": {
