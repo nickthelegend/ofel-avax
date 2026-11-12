@@ -864,3 +864,5 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
 .cc-tag-link rect { fill: #375bd2; }
 .cc-tag-ofel rect { fill: var(--accent); }
 .prev-chart .cc-axis { font-size: 9px; }
+/* the sealed book scrolls as a whole; its rows never shrink (the validator list has overflow: hidden) */
+.bookp .gp-body { grid-auto-rows: max-content; }
