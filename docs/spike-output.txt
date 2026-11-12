@@ -1,0 +1,17 @@
+P-Chain L1 validators        ["NodeID-DYVYmErTquzBku8bgWstVYgfTYEUAWrjE 0x8474d0b4c14b…","NodeID-MHKBg2GWnmb3aRq9itQ1TAboKeJkRKBh4 0xa96e82c7c8dc…","NodeID-MNFfnXYxqu6RwKWJHcjiqspQywFaVETww 0x97424c38c903…"]
+networkID                    1337
+blockchainID (precompile)    0x9d2f5d4be0f35be39b6266cf28837cb0f6e659fdc33b1fd990dd933461a5db1f
+predicted message ID         294jVTdd1qwMGTfxyBxxCEHaVpF7R1UweMg2HTwjg8BG2QoT4T
+sealed                       3 shares, threshold 2, 62 B ciphertext
+early fetch 9654             refused: failed to get message 294jVTdd1qwMGTfxyBxxCEHaVpF7R1UweMg2HTwjg8BG2QoT4T with error not found
+early fetch 9656             refused: failed to get message 294jVTdd1qwMGTfxyBxxCEHaVpF7R1UweMg2HTwjg8BG2QoT4T with error not found
+early fetch 9658             refused: failed to get message 294jVTdd1qwMGTfxyBxxCEHaVpF7R1UweMg2HTwjg8BG2QoT4T with error not found
+emit tx                      0x3b2fdf9a6f17446ac13825b9f74a15791a9e9eca95224cb6b2ad9feb108fdb83
+emitted == predicted bytes   true
+sig NodeID-DYVYmEr           verifies against P-Chain BLS key
+sig NodeID-MHKBg2G           verifies against P-Chain BLS key
+sig NodeID-MNFfnXY           verifies against P-Chain BLS key
+opened with 2/3              BUY 1,250 AVAX @ <= 31.40 sealed at 1794477961
+1/3 signatures               refused: warplock: 1 valid validator signature(s), 2 needed to open
+
+GO: Warp BLS signatures from the L1 validators open a timelock sealed before the message existed.

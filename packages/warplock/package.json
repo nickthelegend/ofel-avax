@@ -1,0 +1,22 @@
+{
+  "name": "warplock",
+  "version": "0.1.0",
+  "description": "Timelock encryption keyed by an Avalanche L1's own validators: encrypt to a future Warp message, decrypt with the validators' BLS signatures on it.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@noble/ciphers": "1.3.0",
+    "@noble/curves": "1.9.1",
+    "@noble/hashes": "1.8.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "22.15.3"
+  }
+}

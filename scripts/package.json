@@ -1,0 +1,9 @@
+{
+  "name": "ofel-scripts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "viem": "2.57.13",
+    "warplock": "workspace:*"
+  }
+}
