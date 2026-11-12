@@ -1,11 +1,14 @@
 // Ofel house liquidity: a counterparty for anyone trying the desk alone.
 // The house cannot read anyone's order (they are sealed). It only sees, like everyone, that a wallet sealed
-// something into the open batch. It then seals its own two-sided quote, blind, around the live AVAX/USD price from
-// Chainlink's Fuji feed: bid and ask OFEL_HOUSE_SPREAD_BPS (default 15 = 0.15%) either side (bid < ask, so it never
-// fills itself; a stale or unreadable feed means no quote, never a guessed one). After the batch clears it pays its
-// filled legs in to the clearing agent with private eERC transfers, exactly like any trader, and reclaims its bonds.
+// something into the open batch. It then seals a blind ladder of its own: 3-5 orders per side, random whole-tAVAX
+// sizes, limits spread within OFEL_HOUSE_SPREAD_BPS (default 15 = 0.15%) of the live AVAX/USD price from Chainlink's
+// Fuji feed (a stale or unreadable feed means no quote, never a guessed one). Some of its bids sit above some of its
+// asks, so house orders also fill against each other: every batch then mixes several orders on each side and the
+// public totals never equal one trader's size (see @ofel/core ladder.ts for the blind check). After the batch clears it
+// pays its filled legs in to the clearing agent with private eERC transfers, one per order, exactly like any trader,
+// and reclaims its bonds.
 //   node --env-file=../.env.fuji house.ts         (needs OFEL_HOUSE_PK with OFEL gas and private eERC balances)
-import { BUY, SELL, fillFor, openMine, sealOrder, selfKeyFromSignature, selfKeyMessage, encryptedErcAbi, type Side } from "@ofel/core";
+import { BUY, SELL, fillFor, houseLadder, inCross, ladderBand, openMine, sealOrder, selfKeyFromSignature, selfKeyMessage, encryptedErcAbi, type Side } from "@ofel/core";
 import { createPublicClient, decodeFunctionData, http, parseAbiItem, toBytes, type Abi, type Hex } from "viem";
 import { avalancheFuji } from "viem/chains";
 import { BOOK, bookAbi, ctx, batchCount, getBatch, getEnvelopes, getOrders, validators, type BatchView } from "./lib/book.ts";
@@ -18,19 +21,18 @@ const FEED = (process.env.OFEL_AVAX_USD_FEED ?? "0x5498BB86BC934c8D34FDA08E81D44
 const fuji = createPublicClient({ chain: avalancheFuji, transport: http(process.env.OFEL_FUJI_RPC ?? "https://avalanche-fuji-c-chain-rpc.publicnode.com") });
 const feedAbi = [{ type: "function", name: "latestRoundData", stateMutability: "view", inputs: [], outputs: [{ type: "uint80" }, { type: "int256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint80" }] }] as const;
 
-/** Bid and ask in 0.01 tUSDC per tAVAX, SPREAD_BPS either side of Chainlink's AVAX/USD answer (8 decimals). */
-async function quotePrices(): Promise<{ bid: bigint; ask: bigint; mid: number; round: bigint }> {
+/** Chainlink's AVAX/USD answer (8 decimals), refused when stale. */
+async function chainlink(): Promise<{ answer: bigint; mid: number; round: bigint }> {
   const [round, answer, , updatedAt] = await fuji.readContract({ address: FEED, abi: feedAbi, functionName: "latestRoundData" });
   const age = Date.now() / 1000 - Number(updatedAt);
   if (answer <= 0n) throw new Error("Chainlink AVAX/USD returned no price");
   if (age > MAX_AGE_S) throw new Error(`Chainlink AVAX/USD is ${Math.round(age)} s old (max ${MAX_AGE_S}): not quoting`);
-  const bid = (answer * (10_000n - SPREAD_BPS)) / 10_000n / 1_000_000n; // 1e8 → cents, rounded down
-  let ask = (answer * (10_000n + SPREAD_BPS) + 10_000n * 1_000_000n - 1n) / 10_000n / 1_000_000n; // rounded up
-  if (ask <= bid) ask = bid + 1n;
-  return { bid, ask, mid: Number(answer) / 1e8, round };
+  return { answer, mid: Number(answer) / 1e8, round };
 }
-const SIZE = BigInt(process.env.OFEL_HOUSE_SIZE ?? 100_000); // 1,000.00 tAVAX per side
-const MIN_LEFT = Number(process.env.OFEL_HOUSE_MIN_LEFT ?? 6); // seconds before T below which it does not quote
+const DEPTH = Number(process.env.OFEL_HOUSE_DEPTH ?? 1000); // whole tAVAX an outside order on either side fills in full
+const MIN_SIZE = Number(process.env.OFEL_HOUSE_MIN_SIZE ?? 150); // whole tAVAX per house order
+const MAX_SIZE = Number(process.env.OFEL_HOUSE_MAX_SIZE ?? 900);
+const MIN_LEFT = Number(process.env.OFEL_HOUSE_MIN_LEFT ?? 15); // seconds before T below which it does not quote
 
 const house = walletFor("OFEL_HOUSE_PK");
 const me = house.account.address.toLowerCase();
@@ -44,8 +46,9 @@ if (!(await registered(house.account.address))) {
   log("house registered with eERC", r.transactionHash ?? "already");
 }
 {
-  const q = await quotePrices();
-  log("house", `${house.account.address} quotes ±${Number(SPREAD_BPS) / 100}% around Chainlink AVAX/USD (now ${q.mid}: ${Number(q.bid) / 100} / ${Number(q.ask) / 100}) for ${Number(SIZE) / 100} tAVAX`);
+  const q = await chainlink();
+  const { lo, hi } = ladderBand(q.answer, SPREAD_BPS);
+  log("house", `${house.account.address} seals a blind ladder, 3-5 orders per side of ${MIN_SIZE}-${MAX_SIZE} tAVAX, limits ${Number(lo) / 100}-${Number(hi) / 100} (±${Number(SPREAD_BPS) / 100}% around Chainlink ${q.mid}), depth ${DEPTH} tAVAX either side`);
 }
 
 async function registered(user: Hex): Promise<boolean> {
@@ -64,11 +67,20 @@ async function quote(b: BatchView) {
   const agentKey = toBytes((await publicClient.readContract({ address: BOOK, abi: bookAbi, functionName: "agentKey" })) as Hex);
   const bond = (await publicClient.readContract({ address: BOOK, abi: bookAbi, functionName: "bond" })) as bigint;
   const vs = await validators();
-  const q = await quotePrices();
-  log(`batch ${b.id} house quote`, `Chainlink AVAX/USD ${q.mid} (round ${q.round}) → bid ${Number(q.bid) / 100} / ask ${Number(q.ask) / 100}`);
-  for (const [side, limit] of [[BUY, q.bid], [SELL, q.ask]] as [Side, bigint][]) {
-    const s = sealOrder(ctx, { batchId: b.id, closeAt: b.closeAt, trader: house.account.address, side, limit, size: SIZE }, vs, 2, agentKey, selfKey);
-    const hash = await house.writeContract({ address: BOOK, abi: bookAbi, functionName: "submitOrder", args: [b.id, s.commitment, s.c.x, s.c.y, s.envelope], value: bond, chain: undefined });
+  const q = await chainlink();
+  const ladder = houseLadder({ answer: q.answer, spreadBps: SPREAD_BPS, minSize: MIN_SIZE, maxSize: MAX_SIZE, depth: DEPTH });
+  const show = (side: number) => ladder.filter((o) => o.side === side).map((o) => `${Number(o.size) / 100}@${Number(o.limit) / 100}`).join(" ");
+  log(`batch ${b.id} house ladder`, `Chainlink AVAX/USD ${q.mid} (round ${q.round}) → bids ${show(BUY)} | asks ${show(SELL)}`);
+  // One nonce per order, sent back to back, so the whole ladder lands in a block or two before the close.
+  let nonce = await publicClient.getTransactionCount({ address: house.account.address, blockTag: "pending" });
+  const sent: { side: Side; hash: Hex }[] = [];
+  for (const o of ladder) {
+    if (Number(b.closeAt) - nowS() < 4) break;
+    const s = sealOrder(ctx, { batchId: b.id, closeAt: b.closeAt, trader: house.account.address, side: o.side, limit: o.limit, size: o.size }, vs, 2, agentKey, selfKey);
+    const hash = await house.writeContract({ address: BOOK, abi: bookAbi, functionName: "submitOrder", args: [b.id, s.commitment, s.c.x, s.c.y, s.envelope], value: bond, nonce: nonce++, chain: undefined });
+    sent.push({ side: o.side, hash });
+  }
+  for (const { side, hash } of sent) {
     const r = await publicClient.waitForTransactionReceipt({ hash });
     log(`batch ${b.id} house ${side === BUY ? "bid" : "ask"} sealed`, `${r.status} ${hash}`);
   }
@@ -81,15 +93,16 @@ for (const t of [deployment.tAVAX, deployment.tUSDC] as Hex[]) {
   tokenIds.set((await publicClient.readContract({ address: deployment.encryptedERC, abi: encryptedErcAbi as Abi, functionName: "tokenIds", args: [t] })) as bigint, t);
 }
 
-/** Tokens the house already paid in to the agent since this batch cleared (survives restarts: read from chain). */
-async function paidSince(fromBlock: bigint): Promise<Set<Hex>> {
+/** How many pay-ins of each token the house already sent the agent since this batch cleared (read from chain, so a
+ *  restart never pays twice). The house pays each token's legs in ascending order of amount, so these are the first ones. */
+async function paidSince(fromBlock: bigint): Promise<Map<Hex, number>> {
   const logs = await publicClient.getLogs({ address: deployment.encryptedERC, event: transferEvent, args: { from: house.account.address, to: deployment.agent }, fromBlock, toBlock: "latest" });
-  const out = new Set<Hex>();
+  const out = new Map<Hex, number>();
   for (const l of logs) {
     const tx = await publicClient.getTransaction({ hash: l.transactionHash });
     const call = decodeFunctionData({ abi: encryptedErcAbi as Abi, data: tx.input });
     const t = tokenIds.get(call.args?.[1] as bigint);
-    if (t) out.add(t);
+    if (t) out.set(t, (out.get(t) ?? 0) + 1);
   }
   return out;
 }
@@ -104,21 +117,36 @@ async function settle(b: BatchView) {
     await publicClient.waitForTransactionReceipt({ hash: h });
     log(`batch ${b.id} house claimBond ${o.index}`, h);
   }
-  const filled = mine.filter((o) => o.status === 5);
-  if (!filled.length) return;
+  if (!mine.some((o) => o.status === 5)) return; // nothing of ours left to pay in
+  // Every house order that filled (still Filled, or already Settled / bond back): paid ones come first in the order below.
+  const filled = mine.filter((o) => o.status >= 5 && inCross(o, b.price));
   const [c] = await publicClient.getLogs({ address: BOOK, event: clearedEvent, args: { batchId: b.id }, fromBlock: 0n, toBlock: "latest" });
   if (!c) return;
   const paid = await paidSince(c.blockNumber);
   const envs = await getEnvelopes(b.id);
-  for (const o of filled) {
-    const m = openMine(selfKey, envs.get(o.index)!.envelope);
-    if (!m) continue;
-    const f = fillFor(m.side, m.size, b.price, b.buyTotal, b.sellTotal);
-    const token = (m.side === BUY ? deployment.tUSDC : deployment.tAVAX) as Hex;
-    if (paid.has(token)) continue;
-    const amount = m.side === BUY ? f.quote : f.base;
-    const tx = await privateTransfer(eerc, house.account.address, deployment.agent, token, amount, `ofel:${b.id}:${o.index}:in`);
-    log(`batch ${b.id} house pay-in ${o.index}`, `${amount} ${m.side === BUY ? "tUSDC" : "tAVAX"} units ${tx}`);
+  const all = await getOrders(b.id);
+  if (!filled.length) return;
+  // Pro-rata fills round down per order, so the hub could end a few cents short of a leg it owes. Each house pay-in
+  // carries a small rounding margin (one tick per filled order in the batch) so every leg can always be paid out.
+  const margin = BigInt(c.args.filled ?? 0) * (b.price / 100n + 2n);
+  const legs = filled
+    .map((o) => {
+      const m = openMine(selfKey, envs.get(o.index)!.envelope);
+      if (!m) return undefined;
+      const f = fillFor(m.side, m.size, b.price, b.buyTotal, b.sellTotal);
+      return { index: o.index, side: m.side, token: (m.side === BUY ? deployment.tUSDC : deployment.tAVAX) as Hex, amount: (m.side === BUY ? f.quote : f.base) + margin };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x)
+    .sort((x, y) => (x.amount < y.amount ? -1 : x.amount > y.amount ? 1 : x.index - y.index));
+  // Sides are public after the reveal: pay first the token the other traders' filled orders wait for.
+  const othersBuy = all.some((o) => o.status !== 3 && o.trader.toLowerCase() !== me && o.side === BUY && inCross(o, b.price));
+  const first = (othersBuy ? deployment.tAVAX : deployment.tUSDC) as Hex;
+  for (const token of [first, first === deployment.tAVAX ? deployment.tUSDC : deployment.tAVAX] as Hex[]) {
+    const mineOf = legs.filter((l) => l.token === token);
+    for (const l of mineOf.slice(paid.get(token) ?? 0)) {
+      const tx = await privateTransfer(eerc, house.account.address, deployment.agent, token, l.amount, `ofel:${b.id}:${l.index}:in`);
+      log(`batch ${b.id} house pay-in ${l.index}`, `${l.amount} ${l.side === BUY ? "tUSDC" : "tAVAX"} units ${tx}`);
+    }
   }
 }
 
