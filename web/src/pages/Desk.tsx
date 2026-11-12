@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BUY, SELL, type Side } from "@ofel/core";
 import { cfg } from "../lib/config";
-import { batchesWithOrders, getSealed, lastClearedBatch, recentBatches, validatorStatus, type Batch } from "../lib/chain";
+import { batchesWithOrders, getSealed, lastClearedBatch, recentBatches, sealedCountOf, validatorStatus, type Batch } from "../lib/chain";
 import { useLive, useNow } from "../lib/hooks";
 import { countdown, short, units, utc } from "../lib/format";
 import { myOrders, parseUnits2, sealAndSubmit, sideLabel, tryOpenEarly, type EarlyAttempt, type SealResult } from "../lib/orders";
@@ -81,14 +81,18 @@ function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
       <div style={{ marginTop: 14 }}>
         <div className="kv"><span className="muted">Notional at limit</span><b className="num">{units(notional)} tUSDC</b></div>
         <div className="kv"><span className="muted">Bond (refunded)</span><b className="num">0.10 OFEL</b></div>
-        <div className="kv"><span className="muted">Opens at</span><b className="num">{batch ? utc(batch.closeAt) : "—"}</b></div>
+        <div className="kv"><span className="muted">Sealed until</span><b className="num">{batch ? utc(batch.closeAt) : "—"}</b></div>
       </div>
       {needsSetup ? (
         <div style={{ marginTop: 14 }}><SetupSteps state={setup} /></div>
       ) : (
-        <button className="btn ink block" disabled={!can} onClick={submit}>
-          {busy ? "Sealing…" : !w.client ? "Connect to seal an order" : !open ? "Waiting for the next batch" : `Seal ${side === BUY ? "buy" : "sell"} order`}
-        </button>
+        !w.client && cfg.faucet ? (
+          <button className="btn ink block" onClick={() => w.connectTest()}>Start with a test wallet</button>
+        ) : (
+          <button className="btn ink block" disabled={!can} onClick={submit}>
+            {busy ? "Sealing…" : !w.client ? "Connect to seal an order" : !open ? "Waiting for the next batch" : `Seal ${side === BUY ? "buy" : "sell"} order`}
+          </button>
+        )
       )}
       {err && <div style={{ marginTop: 12 }}><ErrorBox>{err}</ErrorBox></div>}
       {done && (
@@ -105,7 +109,7 @@ function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
       )}
       <div className="vis" aria-label="Who sees what">
         <div><span className="muted">Now</span><span>Everyone sees ciphertext and your bond.</span></div>
-        <div><span className="muted">At T</span><span>Side and limit open; the price is set from them.</span></div>
+        <div><span className="muted">At close</span><span>Side and limit open; the price is set from them.</span></div>
         <div><span className="muted">Never</span><span><b>Your size.</b> Only you and the auditor read it.</span></div>
       </div>
     </section>
@@ -124,13 +128,13 @@ function Book({ batch, refreshKey }: { batch?: Batch; refreshKey: number }) {
       <div className="book-hero">
         <div>
           <div className="muted" style={{ fontSize: 14 }}>
-            {batch ? (isOpen ? `Batch #${batch.id} seals in` : batch.state === 1 ? `Batch #${batch.id} is past T, closing` : `Batch #${batch.id}`) : "Waiting for the agent to open a batch"}
+            {batch ? (isOpen ? `Batch #${batch.id} closes in` : batch.state === 1 ? `Batch #${batch.id} is past T, closing` : `Batch #${batch.id}`) : "Waiting for the agent to open a batch"}
           </div>
           <div className="big num" style={{ margin: "8px 0 10px" }} aria-live="polite">
             {batch ? (isOpen ? countdown(left) : "00:00") : "—"}
           </div>
           <div className="muted" style={{ maxWidth: 460 }}>
-            Every order in this batch is encrypted to the Warp message the L1 will emit at {batch ? utc(batch.closeAt) : "T"}. Its validators only sign that message after the chain accepts it, so nobody can read the book early. Not us, not a validator on its own.
+            Every order is sealed until {batch ? utc(batch.closeAt) : "the close"}. Nobody can open the book early: not us, not any one validator.
           </div>
           <div className="row wrap" style={{ marginTop: 16 }}>
             <button
@@ -196,15 +200,17 @@ function Book({ batch, refreshKey }: { batch?: Batch; refreshKey: number }) {
 function Mine({ batches, refreshKey }: { batches?: Batch[]; refreshKey: number }) {
   const w = useWallet();
   const [unlock, setUnlock] = useState(0);
+  const count = useLive(async () => (w.address ? sealedCountOf(w.address) : undefined), [w.address, refreshKey], 0);
   const rows = useLive(
     async () => (w.address && batches && unlock > 0 ? myOrders(w.address, await w.selfKey(), batches) : undefined),
     [w.address, batches?.map((b) => `${b.id}:${b.state}:${b.orderCount}`).join(","), refreshKey, unlock],
     0,
   );
   if (!w.address) return <Empty art="key" title="Connect to see your orders">Your orders are decrypted in this browser with a key derived from your wallet signature.</Empty>;
+  if (count.data === 0) return <Empty title="No orders from this wallet yet">Seal one with the ticket.</Empty>;
   if (unlock === 0)
     return (
-      <Empty art="key" title="Your orders are sealed, even here">
+      <Empty art="key" title={count.data ? `${count.data} sealed order${count.data === 1 ? "" : "s"} from this wallet` : "Your orders are sealed, even here"}>
         <button className="btn sm primary" style={{ marginTop: 8 }} onClick={() => setUnlock(1)}>Decrypt my orders</button>
       </Empty>
     );
@@ -259,7 +265,7 @@ export function Desk() {
           </div>
         </div>
         <div><div className="k">Batch</div><div className="v num">{current ? `#${current.id} · ${["", "Open", "Closed", "Cleared"][current.state]}` : batches.error ? "—" : "…"}</div></div>
-        <div><div className="k">Opens at</div><div className="v num">{current ? utc(current.closeAt) : "—"}</div></div>
+        <div><div className="k">Closes at</div><div className="v num">{current ? utc(current.closeAt) : "—"}</div></div>
         <div><div className="k">Last clearing price</div><div className="v num">{lastClear ? `${units(lastClear.price)} tUSDC` : "No clear yet"}</div></div>
         <div><div className="k">Last batch volume</div><div className="v num">{lastClear ? `${units(lastClear.buyTotal < lastClear.sellTotal ? lastClear.buyTotal : lastClear.sellTotal)} tAVAX` : "—"}</div></div>
         <div><div className="k">Validators</div><div className="v num">{online !== undefined ? `${online}/${vals.data!.length} online · any ${cfg.threshold}` : vals.error ? "P-Chain unreachable" : "…"}</div></div>

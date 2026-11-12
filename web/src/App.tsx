@@ -4,7 +4,7 @@ import { client } from "./lib/chain";
 import { useLive } from "./lib/hooks";
 import { QA_ROLES, ROLE_LABEL, useWallet } from "./lib/wallet";
 import { short } from "./lib/format";
-import { Icons, Link, usePath } from "./components/ui";
+import { Empty, Icons, Link, usePath } from "./components/ui";
 import { Landing } from "./pages/Landing";
 import { Desk } from "./pages/Desk";
 import { Batches } from "./pages/Batches";
@@ -76,7 +76,7 @@ function WalletButton() {
               </button>
             </>
           )}
-          {!QA_ROLES.length && !cfg.faucet && <div className="note">The recorded demo uses the QA build, which carries local test signers.</div>}
+          {!QA_ROLES.length && !cfg.faucet && <div className="note">No test wallet on this network.</div>}
         </div>
       )}
     </div>
@@ -127,7 +127,7 @@ export function App() {
           <div className="note" role="alert">{w.error}</div>
         </div>
       )}
-      <main>{page ?? <div className="page"><h1>Not found</h1><Link to="/desk">Go to the desk</Link></div>}</main>
+      <main>{page ?? <div className="page"><section className="panel"><Empty title="No page at this address"><Link to="/desk" className="btn sm primary" >Go to the desk</Link></Empty></section></div>}</main>
       {path !== "/" && (
         <nav className="tabbar" aria-label="App">
           {NAV.map((n) => (

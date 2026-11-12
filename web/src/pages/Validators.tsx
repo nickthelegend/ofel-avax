@@ -15,7 +15,7 @@ export function Validators() {
       <div className="page-head">
         <div>
           <h1>Validators</h1>
-          <p>The Ofel L1's own validator set, read live from the P-Chain. Their BLS keys are the timelock: any {cfg.threshold} of them signing a batch's close message opens it.</p>
+          <p>The Ofel L1's own validators, live from the P-Chain. Any {cfg.threshold} of their signatures open a batch.</p>
         </div>
       </div>
       <section className="panel" style={{ marginBottom: 16, overflow: "hidden" }}>
@@ -39,7 +39,7 @@ export function Validators() {
               {cfg.conversionTx && <a className="pill" href={cfg.pTx(cfg.conversionTx)} target="_blank" rel="noreferrer">ConvertSubnetToL1 ↗</a>}
             </div>
           </div>
-          <img className="eclipse float" style={{ width: 200, height: 200 }} src="/art/validators.webp" alt="" width={200} height={200} />
+          <img className="eclipse float art-sm" style={{ width: 200, height: 200 }} src="/art/validators.webp" alt="" width={200} height={200} />
         </div>
       </section>
       <section className="panel">
@@ -50,13 +50,13 @@ export function Validators() {
         {!!vs.data?.length && (
           <div className="tbl-wrap">
             <table className="tbl">
-              <thead><tr><th>Node</th><th>BLS public key (G1)</th><th className="r">Weight</th>{cfg.fuji && <th className="r">P-Chain balance</th>}<th>Endpoint</th><th className="r">Status</th></tr></thead>
+              <thead><tr><th>Node</th><th className="hide-sm">BLS public key (G1)</th><th className="r hide-sm">Weight</th>{cfg.fuji && <th className="r">P-Chain balance</th>}<th className="hide-sm">Endpoint</th><th className="r">Status</th></tr></thead>
               <tbody>
                 {vs.data.map((v) => (
                   <tr key={v.nodeID}>
                     <td><Hash v={v.nodeID} n={6} /></td>
-                    <td><Hash v={v.publicKey} n={8} /></td>
-                    <td className="r num">{v.weight?.toString() ?? "—"}</td>
+                    <td className="hide-sm"><Hash v={v.publicKey} n={8} /></td>
+                    <td className="r num hide-sm">{v.weight?.toString() ?? "—"}</td>
                     {cfg.fuji && (
                       <td className="r num" title="Validator fee: 512 nAVAX per second">
                         {balOf(v.nodeID) ? (
@@ -67,7 +67,7 @@ export function Validators() {
                         ) : bal.error ? <span className="faint">—</span> : <Skel w="80px" />}
                       </td>
                     )}
-                    <td className="mono muted" style={{ fontSize: 13 }}>{v.uri ?? "—"}</td>
+                    <td className="mono muted hide-sm" style={{ fontSize: 13 }}>{v.uri ?? "—"}</td>
                     <td className="r">{v.online ? <span className="pill ok"><span className="dot" />Online</span> : <span className="pill bad"><span className="dot off" />Offline</span>}</td>
                   </tr>
                 ))}

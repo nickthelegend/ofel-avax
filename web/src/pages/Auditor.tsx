@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { BUY, openAgentBlob, openOrder, opens } from "@ofel/core";
 import { cfg } from "../lib/config";
-import { batchesWithOrders, checkSignatures, getOrders, getSealed, validatorStatus } from "../lib/chain";
+import { getAddress, type Hex } from "viem";
+import { batchesWithOrders, checkSignatures, client, eercAbi, getOrders, getSealed, validatorStatus } from "../lib/chain";
 import { eercFor } from "../lib/eerc";
 import { useLive } from "../lib/hooks";
 import { units } from "../lib/format";
@@ -45,18 +46,44 @@ async function auditBatches(secret: Uint8Array): Promise<{ rows: AuditRow[]; sea
   return { rows, sealedBatches };
 }
 
+/** The asset of each eERC leg: transfer(to, tokenId, …) carries the token ID as its second word, and the eERC maps it
+ * to the ERC-20 it wraps. */
+async function legAssets(hashes: Hex[]): Promise<Map<string, string>> {
+  const ids = new Map<bigint, string>();
+  const out = new Map<string, string>();
+  await Promise.all(
+    hashes.map(async (h) => {
+      const tx = await client.getTransaction({ hash: h });
+      const id = BigInt("0x" + tx.input.slice(2 + 8 + 64, 2 + 8 + 128));
+      if (!ids.has(id)) {
+        const token = (await client.readContract({ address: cfg.eerc, abi: eercAbi, functionName: "tokenAddresses", args: [id] })) as Hex;
+        ids.set(id, token.toLowerCase() === cfg.tAVAX.toLowerCase() ? "tAVAX" : token.toLowerCase() === cfg.tUSDC.toLowerCase() ? "tUSDC" : `token ${id}`);
+      }
+      out.set(h, ids.get(id)!);
+    }),
+  );
+  return out;
+}
+
+const cs = (a?: string | null) => (a ? getAddress(a) : undefined);
+
 export function Auditor() {
   const w = useWallet();
   const [go, setGo] = useState(0);
   const audit = useLive(async () => (w.isAgent && go ? auditBatches(await w.agentSecret()) : undefined), [w.isAgent, go], 15000);
-  const legs = useLive(async () => (w.isAgent && go && w.client ? (await eercFor(w.client)).auditorDecrypt() : undefined), [w.isAgent, go], 15000);
+  const legs = useLive(async () => {
+    if (!(w.isAgent && go && w.client)) return undefined;
+    const rows = await (await eercFor(w.client)).auditorDecrypt();
+    const assets = await legAssets([...new Set(rows.map((r) => r.transactionHash))]).catch(() => new Map<string, string>());
+    return rows.map((r) => ({ ...r, asset: assets.get(r.transactionHash) }));
+  }, [w.isAgent, go], 15000);
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
           <h1>Auditor</h1>
-          <p>The compliance view. The auditor reads every size and every settlement leg, but only from the moment a batch closes, never before.</p>
+          <p>The compliance view: every size and every settlement leg, readable only once a batch closes.</p>
         </div>
         {w.isAgent && go > 0 && <span className="pill ok">Auditor key active</span>}
       </div>
@@ -75,25 +102,25 @@ export function Auditor() {
       ) : (
         <div className="stack">
           <section className="panel">
-            <div className="panel-h"><h3>Every order, opened</h3><span className="muted" style={{ fontSize: 13 }}>Sizes from the agent blob, checked against each Pedersen commitment</span></div>
+            <div className="panel-h"><h3>Every order, opened</h3><span className="muted" style={{ fontSize: 13 }}>Each size checked against its Pedersen commitment</span></div>
             {audit.error && <div className="panel-b"><ErrorBox>{audit.error}</ErrorBox></div>}
             {!audit.data && !audit.error && <div className="panel-b stack"><Skel /><Skel /><Skel /></div>}
             {audit.data && audit.data.rows.length === 0 && <Empty title="Nothing to audit yet">No closed batch has orders.</Empty>}
             {!!audit.data?.rows.length && (
               <div className="tbl-wrap">
                 <table className="tbl">
-                  <thead><tr><th>Batch</th><th>#</th><th>Trader</th><th>Side</th><th className="r">Size</th><th className="r">Limit</th><th className="r">Commitment</th><th className="r">Opened with</th></tr></thead>
+                  <thead><tr><th>Batch</th><th className="hide-sm">#</th><th>Trader</th><th>Side</th><th className="r">Size</th><th className="r">Limit</th><th className="r">Commitment</th><th className="r hide-sm">Opened with</th></tr></thead>
                   <tbody>
                     {audit.data.rows.map((r) => (
                       <tr key={`${r.batch}-${r.index}`}>
                         <td>#{r.batch.toString()}</td>
-                        <td className="num">{r.index}</td>
+                        <td className="num hide-sm">{r.index}</td>
                         <td><Hash v={r.trader} /></td>
                         <td className={r.side === BUY ? "buy" : "sell"}>{r.side === BUY ? "Buy" : "Sell"}</td>
                         <td className="r num">{units(r.size)} tAVAX</td>
                         <td className="r num">{units(r.limit)}</td>
                         <td className="r">{r.commitmentOk ? <span className="pill ok">matches</span> : <span className="pill bad">mismatch</span>}</td>
-                        <td className="r num muted">{r.signers} signatures</td>
+                        <td className="r num muted hide-sm">{r.signers} signatures</td>
                       </tr>
                     ))}
                   </tbody>
@@ -110,15 +137,15 @@ export function Auditor() {
             {!!legs.data?.length && (
               <div className="tbl-wrap">
                 <table className="tbl">
-                  <thead><tr><th>Type</th><th>From</th><th>To</th><th className="r">Amount</th><th>Tx</th></tr></thead>
+                  <thead><tr><th className="hide-sm">Type</th><th>From</th><th>To</th><th className="r">Amount</th><th className="hide-sm">Tx</th></tr></thead>
                   <tbody>
                     {legs.data.map((l) => (
                       <tr key={l.transactionHash + l.amount}>
-                        <td>{l.type}</td>
-                        <td><Hash v={l.sender} /></td>
-                        <td><Hash v={l.receiver ?? undefined} /></td>
-                        <td className="r num">{units(BigInt(l.amount))}</td>
-                        <td><Hash v={l.transactionHash} /></td>
+                        <td className="hide-sm">{l.type}</td>
+                        <td><Hash v={cs(l.sender)} /></td>
+                        <td><Hash v={cs(l.receiver)} /></td>
+                        <td className="r num">{units(BigInt(l.amount))}{l.asset && <span className="dec" style={{ marginLeft: 5 }}>{l.asset}</span>}</td>
+                        <td className="hide-sm"><Hash v={l.transactionHash} /></td>
                       </tr>
                     ))}
                   </tbody>

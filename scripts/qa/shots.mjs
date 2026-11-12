@@ -24,6 +24,9 @@ const ROUTES = [
   { name: "auditor", path: "/auditor", as: "agent", click: ["Derive the auditor key and decrypt"] },
   { name: "auditor-locked", path: "/auditor", as: "bob" },
   { name: "validators", path: "/validators" },
+  { name: "desk-signed-out", path: "/desk" },
+  { name: "portfolio-signed-out", path: "/portfolio" },
+  { name: "not-found", path: "/nope" },
   ...(process.env.OFEL_QA_NET ? [{ name: "desk-new-wallet", path: "/desk", as: "fresh" }] : []),
 ].filter((r) => !process.env.OFEL_QA_ONLY || process.env.OFEL_QA_ONLY.split(",").includes(r.name));
 const report = [];
@@ -51,6 +54,9 @@ await withChromeLock(async () => {
           if (await b.count()) { await b.first().click(); await page.waitForTimeout(5000); }
         }
         await page.waitForTimeout(1500);
+        // walk the page so lazy art loads, then back to the top so the sticky bars sit where a reader sees them
+        await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 700) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 80)); } window.scrollTo(0, 0); });
+        await page.waitForTimeout(400);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         const file = `${OUT}/${r.name}-${width}.png`;
         await page.screenshot({ path: file, fullPage: true });

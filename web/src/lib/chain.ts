@@ -94,6 +94,12 @@ export async function getSealed(id: bigint): Promise<SealedLog[]> {
   return logs.map((l) => ({ index: Number(l.args.index), trader: l.args.trader as Hex, envelope: l.args.envelope as Hex, tx: l.transactionHash, block: l.blockNumber }));
 }
 
+/** How many orders a wallet has sealed (the trader is an indexed, public field; one log query). */
+export async function sealedCountOf(trader: Hex): Promise<number> {
+  const logs = await client.getLogs({ address: cfg.book, event: sealedEvent, args: { trader }, fromBlock: 0n, toBlock: "latest" });
+  return logs.length;
+}
+
 export async function readBook<T>(functionName: string, args: unknown[] = []): Promise<T> {
   return (await client.readContract({ address: cfg.book, abi: bookAbi, functionName, args })) as T;
 }

@@ -43,7 +43,7 @@ function Balances() {
           {!w.address && <p className="muted">Connect a wallet to read your encrypted balances.</p>}
           {w.address && !go && (
             <>
-              <p className="muted" style={{ maxWidth: 520 }}>On chain these are ElGamal ciphertexts. Your browser decrypts them with a key derived from your wallet signature; nobody else can, except the auditor.</p>
+              <p className="muted" style={{ maxWidth: 520 }}>Encrypted on-chain. Only this browser and the auditor can read them.</p>
               <button className="btn primary" onClick={() => setGo(1)}>Decrypt my balances</button>
             </>
           )}
@@ -57,7 +57,7 @@ function Balances() {
             </div>
           )}
         </div>
-        <img className="eclipse float" style={{ width: 180, height: 180 }} src="/art/coins.webp" alt="" width={180} height={180} />
+        <img className="eclipse float art-sm" style={{ width: 180, height: 180 }} src="/art/coins.webp" alt="" width={180} height={180} />
       </div>
     </section>
   );
@@ -144,14 +144,14 @@ function Orders() {
       {!!rows.data?.length && (
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr><th>Batch</th><th>Side</th><th className="r">Size</th><th className="r">Limit</th><th className="r">Filled</th><th className="r">Price</th><th className="r">Notional</th><th className="r">Status</th><th className="r">Action</th></tr></thead>
+            <thead><tr><th>Batch</th><th>Side</th><th className="r">Size</th><th className="r hide-sm">Limit</th><th className="r">Filled</th><th className="r">Price</th><th className="r">Notional</th><th className="r">Status</th><th className="r">Action</th></tr></thead>
             <tbody>
               {rows.data.map((r) => (
                 <tr key={r.tx}>
                   <td>#{r.batch.id.toString()}</td>
                   <td className={r.mine.side === BUY ? "buy" : "sell"}>{sideLabel(r.mine.side)}</td>
                   <td className="r num">{units(r.mine.size)}</td>
-                  <td className="r num">{units(r.mine.limit)}</td>
+                  <td className="r num hide-sm">{units(r.mine.limit)}</td>
                   <td className="r num">{r.fill ? units(r.fill.base) : <span className="faint">—</span>}</td>
                   <td className="r num">{r.fill ? units(r.batch.price) : <span className="faint">—</span>}</td>
                   <td className="r num">{r.fill ? units(r.fill.quote) : <span className="faint">—</span>}</td>
@@ -173,7 +173,7 @@ export function Portfolio() {
       <div className="page-head">
         <div>
           <h1>Portfolio</h1>
-          <p>Your fills, at the batch's one price. Settlement legs are private eERC transfers: the chain records that a transfer happened, never how much.</p>
+          <p>Your fills at each batch's one price. Settlement is private: the chain shows a transfer, never the amount.</p>
         </div>
       </div>
       <div className="stack">

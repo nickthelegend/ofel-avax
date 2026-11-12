@@ -44,7 +44,7 @@ function List() {
       <div className="page-head">
         <div>
           <h1>Batches</h1>
-          <p>The open batch, then every batch that received orders. Each batch seals until its close time, then the L1's validators sign it open. One price per batch, set on chain from the revealed limits.</p>
+          <p>Sealed until close, opened by the L1's validators, one price each.</p>
         </div>
       </div>
       <section className="panel">
@@ -106,24 +106,24 @@ function Detail({ id }: { id: bigint }) {
 
       <div className="grid-detail">
         <section className="panel">
-          <div className="panel-h"><h3>Orders as the chain stores them</h3><span className="muted" style={{ fontSize: 13 }}>Sizes are Pedersen commitments</span></div>
+          <div className="panel-h"><h3>Orders as the chain stores them</h3><span className="muted" style={{ fontSize: 13 }}>Sizes stay commitments</span></div>
           {orders.error && <div className="panel-b"><ErrorBox>{orders.error}</ErrorBox></div>}
           {orders.data?.length === 0 && <Empty title="No orders in this batch" />}
           {!!orders.data?.length && (
             <div className="tbl-wrap">
               <table className="tbl">
-                <thead><tr><th>#</th><th>Trader</th><th>Side</th><th className="r">Limit</th><th>Size</th><th>Tx</th><th className="r">Status</th></tr></thead>
+                <thead><tr><th className="hide-sm">#</th><th>Trader</th><th>Side</th><th className="r">Limit</th><th>Size</th><th className="hide-sm">Tx</th><th className="r">Status</th></tr></thead>
                 <tbody>
                   {orders.data.map((o) => {
                     const tx = sealed.data?.find((s) => s.index === o.index)?.tx;
                     return (
                       <tr key={o.index}>
-                        <td className="num">{o.index}</td>
+                        <td className="num hide-sm">{o.index}</td>
                         <td><Hash v={o.trader} /></td>
                         <td className={o.side === BUY ? "buy" : o.side ? "sell" : "faint"}>{o.side ? (o.side === BUY ? "Buy" : "Sell") : "sealed"}</td>
                         <td className="r num">{o.side ? units(o.limit) : <span className="faint">sealed</span>}</td>
                         <td><span className="cipher" title={`C = (${o.cx}, ${o.cy})`}>C {short("0x" + o.cx.toString(16), 4)}</span></td>
-                        <td>{tx ? <button className="btn sm ghost" onClick={() => setRawOpen(rawOpen === tx ? undefined : tx)}>{rawOpen === tx ? "Hide input" : "Raw input"}</button> : "—"}</td>
+                        <td className="hide-sm">{tx ? <button className="btn sm ghost" onClick={() => setRawOpen(rawOpen === tx ? undefined : tx)}>{rawOpen === tx ? "Hide input" : "Raw input"}</button> : "—"}</td>
                         <td className="r"><StatusPill s={o.status} /></td>
                       </tr>
                     );
@@ -149,7 +149,7 @@ function Detail({ id }: { id: bigint }) {
                 <div><div className="muted" style={{ fontSize: 12.5 }}>Matched</div><Amount v={x.buyTotal < x.sellTotal ? x.buyTotal : x.sellTotal} unit="tAVAX" /></div>
               </div>
               <p className="muted" style={{ margin: "12px 0 0", fontSize: 13.5 }}>
-                The contract checked Σ commitments = total·G + blind·H on BN254 for each side. Totals are public; no single order's size ever is.
+                Checked on-chain: Σ commitments = total·G + blind·H. Totals are public; single sizes never are.
               </p>
             </div>
           )}
@@ -160,7 +160,7 @@ function Detail({ id }: { id: bigint }) {
           <div className="panel-b stack">
             <div className="kv" style={{ borderTop: 0 }}><span className="muted">Warp message ID</span><Hash v={x.closeMessageId !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? x.closeMessageId : undefined} n={6} /></div>
             <div className="muted" style={{ fontSize: 13.5 }}>
-              Ask each validator of the L1 for its BLS signature on this batch's close message, then verify it here against the key the P-Chain records for that validator. Any {cfg.threshold} valid signatures open every order.
+              Each validator's BLS signature on the close message, checked here against its P-Chain key. Any {cfg.threshold} open every order.
             </div>
             <button
               className="btn"
@@ -174,7 +174,7 @@ function Detail({ id }: { id: bigint }) {
                 }
               }}
             >
-              {busy ? "Asking validators…" : "Fetch and verify signatures"}
+              {busy ? "Asking validators…" : sigs ? "Check again" : "Fetch and verify signatures"}
             </button>
             {sigs && (
               <div className="stack" style={{ gap: 8 }}>
