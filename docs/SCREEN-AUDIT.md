@@ -11,7 +11,10 @@ Every screen is judged side by side with the Eidolon screen it was forked from, 
 Hosted screenshots: `desk-v2/before/` (the old desk) and `desk-v2/after/` (https://ofel-desk.vercel.app after this
 round, `scripts/qa/shots.mjs`), and the live judge path with a brand-new wallet in `desk-v2/after/judge-path/`
 (`scripts/qa/judge-path.mjs`: Start with a test wallet → Get test funds → seal → Try to open it now → close → one
-price → settle privately → claim bond; batch #195, 0 console errors).
+price → settle privately → claim bond; batch #195 end to end with 0 console errors). After the house moved to
+Chainlink pricing (batch #210), two more hosted runs cleared at 8.38 (#214) and 8.36 (#232) next to Chainlink's
+~8.35, paid in and were settled by the agent; in both the Mac's memory watchdog stopped the headless Chrome during
+the in-browser proof, so their last screenshots stop at "paying in" (the settlement is in the agent's log).
 
 | Screen / state | Width | Eidolon counterpart | Score | Notes |
 |---|---|---|---|---|
