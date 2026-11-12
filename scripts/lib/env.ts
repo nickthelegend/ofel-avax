@@ -39,7 +39,7 @@ export const circuitDir = `${ROOT}web/public/circuits`;
 export const circuitURLs = {
   register: { wasm: `${circuitDir}/registration/registration.wasm`, zkey: `${circuitDir}/registration/circuit_final.zkey` },
   transfer: { wasm: `${circuitDir}/transfer/transfer.wasm`, zkey: `${circuitDir}/transfer/transfer.zkey` },
-  withdraw: { wasm: `${circuitDir}/withdraw/withdraw.wasm`, zkey: `${circuitDir}/withdraw/withdraw.zkey` },
+  withdraw: { wasm: `${circuitDir}/withdraw/withdraw.wasm`, zkey: `${circuitDir}/withdraw/circuit_final.zkey` },
   mint: { wasm: `${circuitDir}/mint/mint.wasm`, zkey: `${circuitDir}/mint/mint.zkey` },
   burn: { wasm: `${circuitDir}/burn/burn.wasm`, zkey: `${circuitDir}/burn/burn.zkey` },
 };
