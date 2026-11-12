@@ -3,7 +3,7 @@ import { BaseError, ContractFunctionRevertedError, toBytes, type Hex, type Walle
 import { BUY, batchIdentity, fillFor, inCross, openMine, sealOrder, type MyOrder, type Side } from "@ofel/core";
 import { getWarpSignature, messageId } from "warplock";
 import { cfg, rpcOf } from "./config";
-import { bookAbi, client, ctx, getBatch, getOrders, getSealed, readBook, validatorSet, validatorStatus, type Batch, type Order } from "./chain";
+import { bookAbi, client, ctx, getBatch, getOrders, getSealed, readBook, validatorSet, validatorStatus, warpAnswer, type Batch, type Order } from "./chain";
 
 export function parseUnits2(s: string): bigint | null {
   const t = s.replace(/,/g, "").trim();
@@ -67,7 +67,7 @@ export async function tryOpenEarly(b: Batch): Promise<EarlyAttempt> {
         return { nodeID: v.nodeID, result: "signed", refused: false };
       } catch (e) {
         const m = (e as Error).message;
-        return { nodeID: v.nodeID, result: /not found/.test(m) ? "refused: message not found" : m.slice(-80), refused: true };
+        return { nodeID: v.nodeID, result: warpAnswer(m, "refused: message not found"), refused: true };
       }
     }),
   );

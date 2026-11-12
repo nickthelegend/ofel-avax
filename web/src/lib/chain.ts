@@ -165,6 +165,14 @@ export interface SignatureCheck {
   signature?: Uint8Array;
 }
 
+/** A validator's answer to warp_getMessageSignature, in plain words for the desk. A node whose L1 chain is down or
+ *  re-syncing answers HTTP 503 ("not done bootstrapping"): that is "out of sync", not a refusal. */
+export function warpAnswer(m: string, notFound: string): string {
+  if (/not found/i.test(m)) return notFound;
+  if (/HTTP 50[234]|bootstrapp|ECONN|Failed to fetch|timed? ?out/i.test(m)) return "no answer: node out of sync";
+  return `no answer: ${m.replace(/^.*?:\s*/, "").slice(0, 60)}`;
+}
+
 /** Ask each validator for its BLS signature on a batch's close message and verify it here, in the browser. */
 export async function checkSignatures(b: Batch, vs: ValidatorStatus[]): Promise<{ identity: Uint8Array; messageIdHex: Hex; checks: SignatureCheck[] }> {
   const identity = batchIdentity(ctx, b.id, b.closeAt);
@@ -178,7 +186,7 @@ export async function checkSignatures(b: Batch, vs: ValidatorStatus[]): Promise<
         return { nodeID: v.nodeID, ok, detail: ok ? "verified against P-Chain BLS key" : "does not verify", signature: sig };
       } catch (e) {
         const m = (e as Error).message;
-        return { nodeID: v.nodeID, ok: false, detail: /not found/.test(m) ? "refused: message does not exist yet" : m.slice(0, 80) };
+        return { nodeID: v.nodeID, ok: false, detail: warpAnswer(m, "refused: message does not exist yet") };
       }
     }),
   );
