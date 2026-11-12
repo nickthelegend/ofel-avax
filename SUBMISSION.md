@@ -53,16 +53,9 @@ Fuji L1; Playwright for QA.
   No hosted explorer indexes the L1's own EVM txs; check them with `cast receipt` on that RPC, or on the desk's
   Batches pages.
 - **Repo:** (to be pushed by Nick).
-- **Demo video:** (link to be added after upload). Film: `grokbot/videos/ofel-avax/ofel-avax-film.mp4` (2:43, 1080p) and
-  `ofel-avax-film-share.mp4` (720p, 9.4 MB), recorded live on the hosted desk on Nov 12 (batch #94, from an empty
-  test wallet to settlement); sources, judge notes and QA in `grokbot/videos/ofel-avax/film/`. That film shows the
-  previous desk; the desk was rebuilt on Nov 13 as a trading terminal on Eidolon's UI base (see README, Prior work),
-  and a new film on it waits for Nick's UI review.
-
-## Tests
-35 Foundry tests, 17 unit tests and 31 live end-to-end checks on the Fuji L1, including stopping a validator; plus the
-hosted judge path run from the Vercel desk with a fresh wallet. All pass. See TESTING.md.
-
-## AI tools used
-Claude Code (all code, contracts and docs); ChatGPT image generation (the 3D object set). No Codex was used for this
-build.
+- **Demo video:** (link to be added after upload). Film: `grokbot/videos/ofel-avax/ofel-avax-film.mp4` (2:58, 1080p) and
+  `ofel-avax-film-share.mp4` (720p, 9.7 MB), v4 of round 3, recorded live on the hosted desk v2 on Nov 12 from a
+  brand-new test wallet: batch #271 sealed, refused early by the contract and all three validators, opened with 2 of
+  3 signatures, cleared at 8.34 next to Chainlink's AVAX/USD, settled privately; `cast receipt` of the seal, the
+  clear and the private payment. Every version is kept in `videos/ofel-avax/versions/` (v1 = old desk), with the
+  independent judge's notes in `videos/ofel-avax/film/JUDGE-vN.md`.
