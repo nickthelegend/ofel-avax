@@ -7,17 +7,19 @@ Ship round (Nov 12–13): screen-by-screen audit of every hosted route and state
 ([docs/SCREEN-AUDIT.md](docs/SCREEN-AUDIT.md)), the landing re-positioned for a non-crypto judge, a new art set and OG
 card. Re-score in the last column.
 
-| Criterion (weight) | Before | Nov 12 | Ship round | Why (ship round) |
-|---|---|---|---|---|
-| Does it work (30%) | 7.5 | 8.8 | 8.9 | A signed-out judge now gets "Start with a test wallet" on the ticket instead of a disabled button; a new wallet sees "No orders yet" instead of a pointless decrypt; auditor legs name their asset. Same limits as before (one VPS for all three validators). |
-| Idea and originality (25%) | 9 | 9 | 9 | Unchanged. |
-| Technical depth (20%) | 9 | 9.2 | 9.2 | Unchanged. |
-| Avalanche fit (15%) | 7.5 | 9 | 9 | Unchanged; the landing now says why Avalanche in the first screen and links the L1 and its P-Chain txs. |
-| Demo and communication (10%) | 7.5 | 7.5 | 8 | The first screen says who it's for and what they get in one line; phone layouts fixed; OG card. The film is still not recorded. |
-| **Weighted** | **8.1** | **8.8** | **8.9** | |
+| Criterion (weight) | Before | Nov 12 | Ship round | Desk v2 (Nov 13) | Why (desk v2) |
+|---|---|---|---|---|---|
+| Does it work (30%) | 7.5 | 8.8 | 8.9 | 9.0 | The hosted judge path ran end to end on the new desk with a brand-new wallet (batch #195: funds, seal, refused early open, clear at 31.45, private pay-in, agent payout, bond back), 0 console errors. P-Chain reads fall back to a public mirror. Same limit: one VPS runs all three validators. |
+| Idea and originality (25%) | 9 | 9 | 9 | 9 | Unchanged. |
+| Technical depth (20%) | 9 | 9.2 | 9.2 | 9.2 | Unchanged contracts; the desk now shows the order's whole life (ciphertext, commitment, Warp signatures, clear, eERC legs). |
+| Avalanche fit (15%) | 7.5 | 9 | 9 | 9.1 | Chainlink AVAX/USD on Fuji as the reference price next to the L1's own book; validators and P-Chain runway on the desk. |
+| Demo and communication (10%) | 7.5 | 7.5 | 8 | 8.3 | A real trading terminal (Eidolon's base): candles, sealed book, ticket, tape. The film shows the old desk; a new one waits for Nick's UI review. |
+| **Weighted** | **8.1** | **8.8** | **8.9** | **9.0** | |
 
 ## What is left for 9/10, in order of value
 
+0. **Nick reviews the desk v2 UI** (screens in `orchestration/shots/avax-ofel/desk-v2/`); the film is re-recorded on it
+   only after he approves.
 1. **The film** (Nick or the film session): lead with the problem (front-running and watched size), then the hosted
    desk live: Test wallet → Get test funds → seal → "Try to open it now" refused by the contract and all validators →
    T → opens with the validators' signatures → one price → pay privately → the auditor's view → stop one validator on

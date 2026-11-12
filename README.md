@@ -21,6 +21,19 @@ compliance.
 > validator signatures, eERC balances, settlement and the auditor view) and every contract, circuit and the warplock
 > library are Ofel's own. The candle and Chainlink helpers are ported from Kumi (same author).
 
+## The desk
+
+A trading terminal on Eidolon's UI base: AVAX-USD candles from Coinbase with Chainlink's Fuji feed, the L1's own
+tAVAX/tUSDC clears below them, the sealed book in the middle, the block-order ticket on the right.
+
+![The desk: market bar, candles with the Chainlink feed and Ofel clears, the sealed book and the ticket](docs/screens/desk-1440.webp)
+
+| Try to open it early: refused by the contract and every validator | After the close: one price, settled privately |
+|---|---|
+| ![Refused early open](docs/screens/desk-refused-1440.webp) | ![Order cleared and settled](docs/screens/desk-settled-1440.webp) |
+
+Phone: [docs/screens/desk-375.webp](docs/screens/desk-375.webp) · landing: [docs/screens/landing-1440.webp](docs/screens/landing-1440.webp)
+
 ## How it works
 
 1. **The seal: warplock.** Each batch has a close time T. The trader's browser encrypts the order to the exact bytes of

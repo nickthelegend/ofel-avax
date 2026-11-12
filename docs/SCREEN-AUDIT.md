@@ -1,4 +1,41 @@
-# Ofel: screen-by-screen audit (ship round, Nov 12–13, 2026)
+# Ofel: screen-by-screen audit
+
+## Desk v2 (Nov 13, 2026): rebuilt on Eidolon's UI base
+
+Nick, after the first film: "Ofel should look like the way we built Eidolon… a desk with everything: a trading desk,
+price charts and candles." Then: "I want Eidolon to be the BASE of Ofel." The web app now forks Eidolon's design
+system and terminal layout (README, Prior work) and keeps Ofel's name, mark, obsidian 3D art and copper first light.
+
+Every screen is judged side by side with the Eidolon screen it was forked from, at 1440 and 375:
+`orchestration/shots/avax-ofel/desk-v2/vs-eidolon/vs-<screen>-<width>.jpg` (made by `scripts/qa/vs-eidolon.py`).
+Hosted screenshots: `desk-v2/before/` (the old desk) and `desk-v2/after/` (https://ofel-desk.vercel.app after this
+round, `scripts/qa/shots.mjs`), and the live judge path with a brand-new wallet in `desk-v2/after/judge-path/`
+(`scripts/qa/judge-path.mjs`: Start with a test wallet → Get test funds → seal → Try to open it now → close → one
+price → settle privately → claim bond; batch #195, 0 console errors).
+
+| Screen / state | Width | Eidolon counterpart | Score | Notes |
+|---|---|---|---|---|
+| Desk, signed in (chart, sealed book, ticket, tabs) | 1440 | trade-quoted | 9 | Same grid as Eidolon: night market bar, chart left, centre panel, ticket right, tabs below. Market bar: Chainlink AVAX/USD (Fuji), Coinbase AVAX-USD with 1 h change, last Ofel clear, batch countdown, validators online, 1m/5m/15m/1h. Two-pane chart: real candles + Chainlink, and Ofel's clears with batch markers and the typed limit. |
+| Desk | 375 | trade-375 | 9 | Stacks like Eidolon's: bar → chart → ticket → sealed book → tabs. Chart shows 48 candles on phones; limit caption hidden, its axis tag kept. |
+| Desk, signed out | 1440 / 375 | trade-empty | 9 | One primary action, "Start with a test wallet"; tabs explain what connecting unlocks. |
+| Desk, new empty wallet (setup) | 1440 / 375 | — | 9 | Three checklist rows and one "Get test funds" button; finished in 30 s on the hosted run. |
+| Ticket mid-seal → sealed → refused → cleared → settled | 1440 / 375 | trade-quoted (dry-run box) | 9 | Live order status under the button: sealed in the browser (bytes, tx), batch closes, validators open it, one price (fill), settled by eERC transfer, claim bond. "Try to open it now" shows `closeBatch` reverting with TooEarly and all three validators refusing. |
+| Tabs: Your orders (P&L), Recent clears, Batches, Private balances, Auditor | 1440 / 375 | trade-rounds / memories / habits | 9 | Eidolon's tab bar and tables; P&L marked at the last clear; tape of clears with prices and matched size, single sizes never shown. |
+| Landing | 1440 | home | 9 | Eidolon's structure: night hero with the live desk in a device frame, trust strip, live numbers, three benefits with Ofel's art, who-sees-what, proof list, CTA, footer. |
+| Landing | 375 | home-375 | 9 | Who-sees-what fits (Yes / Never / Sealed); section art loads eagerly. |
+| Batches list | 1440 / 375 | leaderboard | 9 | One table, state pills, prices, close times. |
+| Batch detail | 1440 | round | 9 | Summary card + night verdict (clearing price, proven totals), timeline, orders as stored (limits after close, sizes as commitments, raw input), signatures verified in the browser. |
+| Batch detail | 375 | round-375 | 9 | Trader column hidden on phones so side, limit, commitment and status fit. |
+| Portfolio | 1440 / 375 | trade-habits | 9 | Private balances (decrypted here, ciphertext shown), orders with P&L and settle actions. |
+| Auditor (key active / locked) | 1440 / 375 | trade-rounds | 9 | Opened orders with commitment checks; eERC legs with asset; locked state names the auditor wallet. |
+| Validators | 1440 / 375 | leaderboard / round | 9 | Night "online now" card, PoA facts with Explorer links, P-Chain balances and runway. |
+| Not found | 1440 / 375 | — | 9 | Empty-state art and one action. |
+| Loading / error | both | — | 9 | Skeletons; errors name the source (e.g. P-Chain). P-Chain reads now try the public mirror first, then the official endpoint (the official one rate-limited this Mac with 429s). |
+
+Still short of a 10, honestly: the 1440 sealed-book panel scrolls inside itself below ~900 px of height (Eidolon's
+ghost panel does the same); the tAVAX/tUSDC pane has few points because the L1 only clears when someone trades.
+
+## Ship round (Nov 12–13, 2026), the previous desk
 
 Every hosted route and state of https://ofel-desk.vercel.app at 1440 and 375, judged before and after this round.
 Screenshots: `orchestration/shots/avax-ofel/ship/before/` (hosted, before) and `.../ship/after/` (hosted, after),
