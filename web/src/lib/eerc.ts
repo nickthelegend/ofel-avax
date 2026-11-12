@@ -1,6 +1,6 @@
 // Ava Labs eERC in the browser: private balances and private transfers (Groth16 proofs made here).
 import { EERC } from "@avalabs/eerc-sdk";
-import type { Hex, WalletClient } from "viem";
+import { decodeFunctionData, parseAbiItem, type Hex, type WalletClient } from "viem";
 import { cfg, circuitURLs } from "./config";
 import { client, eercAbi } from "./chain";
 
@@ -49,4 +49,47 @@ export async function privateTransfer(e: EERC, from: Hex, to: Hex, token: Hex, a
   const r = await e.transfer(to, amount, bal.encrypted, bal.decrypted, await auditorPublicKey(), token, memo);
   await client.waitForTransactionReceipt({ hash: r.transactionHash });
   return r.transactionHash;
+}
+
+const auditorAbi = [{ type: "function", name: "auditor", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] }] as const;
+const legEvents = [
+  parseAbiItem("event PrivateTransfer(address indexed from, address indexed to, uint256[7] auditorPCT, address indexed auditorAddress)"),
+  parseAbiItem("event PrivateMint(address indexed user, uint256[7] auditorPCT, address indexed auditorAddress)"),
+  parseAbiItem("event PrivateBurn(address indexed user, uint256[7] auditorPCT, address indexed auditorAddress)"),
+];
+
+export interface AuditLeg {
+  transactionHash: Hex;
+  amount: string;
+  sender: Hex;
+  receiver?: Hex;
+  type: string;
+  blockNumber: bigint;
+}
+
+/** Every eERC leg of the last `window` blocks, decrypted with the auditor key. Same steps as the SDK's
+ * auditorDecrypt, except the auditor is checked with the contract's own `auditor()` (the SDK 1.0.2 only looks for an
+ * AuditorChanged event in the last 1,000 blocks, so it stops recognising the auditor once the chain is older). */
+export async function auditorLegs(e: EERC, me: Hex, window = 1000n): Promise<AuditLeg[]> {
+  const auditor = (await client.readContract({ address: cfg.eerc, abi: auditorAbi, functionName: "auditor" })) as Hex;
+  if (auditor.toLowerCase() !== me.toLowerCase()) throw new Error(`This wallet is not the eERC auditor (${auditor})`);
+  const head = await client.getBlockNumber();
+  const fromBlock = head > window ? head - window : 0n;
+  const logs = (await Promise.all(legEvents.map((event) => client.getLogs({ address: cfg.eerc, event, args: { auditorAddress: me }, fromBlock, toBlock: head })))).flat();
+  const out: AuditLeg[] = [];
+  for (const l of logs) {
+    const pct = (l.args as { auditorPCT?: readonly bigint[] }).auditorPCT;
+    if (!l.transactionHash || !pct || pct.length !== 7) continue;
+    const tx = await client.getTransaction({ hash: l.transactionHash });
+    const amount = (e as unknown as { decryptPCT: (p: readonly bigint[]) => bigint }).decryptPCT(pct);
+    let receiver: Hex | undefined;
+    try {
+      const d = decodeFunctionData({ abi: eercAbi, data: tx.input });
+      receiver = d.functionName === "privateBurn" ? (tx.to as Hex) : ((d.args?.[0] as Hex) ?? undefined);
+    } catch {
+      receiver = undefined;
+    }
+    out.push({ transactionHash: l.transactionHash, amount: amount.toString(), sender: tx.from, receiver, type: l.eventName.replace("Private", ""), blockNumber: tx.blockNumber! });
+  }
+  return out.sort((a, b) => Number(b.blockNumber - a.blockNumber));
 }

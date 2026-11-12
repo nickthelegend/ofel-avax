@@ -3,7 +3,7 @@ import { BUY, openAgentBlob, openOrder, opens } from "@ofel/core";
 import { cfg } from "../lib/config";
 import { getAddress, type Hex } from "viem";
 import { batchesWithOrders, checkSignatures, client, eercAbi, getOrders, getSealed, validatorStatus } from "../lib/chain";
-import { eercFor } from "../lib/eerc";
+import { auditorLegs, eercFor } from "../lib/eerc";
 import { useLive } from "../lib/hooks";
 import { units } from "../lib/format";
 import { useWallet } from "../lib/wallet";
@@ -75,7 +75,7 @@ export function AuditView() {
   const audit = useLive(async () => (w.isAgent && go ? auditBatches(await w.agentSecret()) : undefined), [w.isAgent, go], 15000);
   const legs = useLive(async () => {
     if (!(w.isAgent && go && w.client)) return undefined;
-    const rows = await (await eercFor(w.client)).auditorDecrypt();
+    const rows = await auditorLegs(await eercFor(w.client), w.address!);
     const assets = await legAssets([...new Set(rows.map((r) => r.transactionHash))]).catch(() => new Map<string, string>());
     return rows.map((r) => ({ ...r, asset: assets.get(r.transactionHash) }));
   }, [w.isAgent, go], 15000);
