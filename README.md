@@ -14,7 +14,10 @@ compliance.
 > **https://ofel-desk.vercel.app**. A judge with an empty wallet picks **Connect → Test wallet**, taps **Get test funds**
 > (OFEL gas and test assets from the Ofel faucet contract on the L1, so no Fuji AVAX is needed), and can seal an order
 > right away. A house wallet quotes blind into any batch you trade in, ±0.15% around Chainlink's AVAX/USD on Fuji,
-> so your order has a counterparty at the market price.
+> so your order has a counterparty at the market price. It splits its liquidity into 3-5 sealed orders per side with
+> random sizes, and some of its bids sit above some of its asks, so every batch mixes several orders on each side:
+> the public buy and sell totals never equal one trader's size (`packages/ofel/src/ladder.ts`; a 1,000 tAVAX order
+> at Chainlink ±0.5% fills in full and lands among at least two orders per side). Totals are public, single sizes aren't.
 
 > **Prior work:** the desk UI is forked from Eidolon (Total Recall, Nov 2026), the same author's trading terminal: its
 > design system (tokens, Urbanist + Space Mono, cards, buttons, tables) and terminal layout (night market bar, chart,
