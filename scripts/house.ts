@@ -1,20 +1,36 @@
 // Ofel house liquidity: a counterparty for anyone trying the desk alone.
 // The house cannot read anyone's order (they are sealed). It only sees, like everyone, that a wallet sealed
-// something into the open batch. It then seals its own two-sided quote, blind: buy at OFEL_HOUSE_BID and sell at
-// OFEL_HOUSE_ASK (bid < ask, so it never fills itself). After the batch clears it pays its filled legs in to the
-// clearing agent with private eERC transfers, exactly like any trader, and reclaims its bonds.
+// something into the open batch. It then seals its own two-sided quote, blind, around the live AVAX/USD price from
+// Chainlink's Fuji feed: bid and ask OFEL_HOUSE_SPREAD_BPS (default 15 = 0.15%) either side (bid < ask, so it never
+// fills itself; a stale or unreadable feed means no quote, never a guessed one). After the batch clears it pays its
+// filled legs in to the clearing agent with private eERC transfers, exactly like any trader, and reclaims its bonds.
 //   node --env-file=../.env.fuji house.ts         (needs OFEL_HOUSE_PK with OFEL gas and private eERC balances)
 import { BUY, SELL, fillFor, openMine, sealOrder, selfKeyFromSignature, selfKeyMessage, encryptedErcAbi, type Side } from "@ofel/core";
-import { decodeFunctionData, parseAbiItem, toBytes, type Abi, type Hex } from "viem";
+import { createPublicClient, decodeFunctionData, http, parseAbiItem, toBytes, type Abi, type Hex } from "viem";
+import { avalancheFuji } from "viem/chains";
 import { BOOK, bookAbi, ctx, batchCount, getBatch, getEnvelopes, getOrders, validators, type BatchView } from "./lib/book.ts";
 import { deployment, log, publicClient, walletFor } from "./lib/env.ts";
 import { eercFor, privateBalance, privateTransfer } from "./lib/eerc.ts";
 
-const BID = BigInt(process.env.OFEL_HOUSE_BID ?? 3130); // tUSDC per tAVAX, 2 decimals
-const ASK = BigInt(process.env.OFEL_HOUSE_ASK ?? 3140);
+const SPREAD_BPS = BigInt(process.env.OFEL_HOUSE_SPREAD_BPS ?? 15);
+const MAX_AGE_S = Number(process.env.OFEL_HOUSE_MAX_AGE_S ?? 3600); // older Chainlink answer = no quote
+const FEED = (process.env.OFEL_AVAX_USD_FEED ?? "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD") as Hex; // Chainlink AVAX/USD, Fuji
+const fuji = createPublicClient({ chain: avalancheFuji, transport: http(process.env.OFEL_FUJI_RPC ?? "https://avalanche-fuji-c-chain-rpc.publicnode.com") });
+const feedAbi = [{ type: "function", name: "latestRoundData", stateMutability: "view", inputs: [], outputs: [{ type: "uint80" }, { type: "int256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint80" }] }] as const;
+
+/** Bid and ask in 0.01 tUSDC per tAVAX, SPREAD_BPS either side of Chainlink's AVAX/USD answer (8 decimals). */
+async function quotePrices(): Promise<{ bid: bigint; ask: bigint; mid: number; round: bigint }> {
+  const [round, answer, , updatedAt] = await fuji.readContract({ address: FEED, abi: feedAbi, functionName: "latestRoundData" });
+  const age = Date.now() / 1000 - Number(updatedAt);
+  if (answer <= 0n) throw new Error("Chainlink AVAX/USD returned no price");
+  if (age > MAX_AGE_S) throw new Error(`Chainlink AVAX/USD is ${Math.round(age)} s old (max ${MAX_AGE_S}): not quoting`);
+  const bid = (answer * (10_000n - SPREAD_BPS)) / 10_000n / 1_000_000n; // 1e8 → cents, rounded down
+  let ask = (answer * (10_000n + SPREAD_BPS) + 10_000n * 1_000_000n - 1n) / 10_000n / 1_000_000n; // rounded up
+  if (ask <= bid) ask = bid + 1n;
+  return { bid, ask, mid: Number(answer) / 1e8, round };
+}
 const SIZE = BigInt(process.env.OFEL_HOUSE_SIZE ?? 100_000); // 1,000.00 tAVAX per side
 const MIN_LEFT = Number(process.env.OFEL_HOUSE_MIN_LEFT ?? 6); // seconds before T below which it does not quote
-if (BID >= ASK) throw new Error("OFEL_HOUSE_BID must be below OFEL_HOUSE_ASK, or the house fills itself");
 
 const house = walletFor("OFEL_HOUSE_PK");
 const me = house.account.address.toLowerCase();
@@ -27,7 +43,10 @@ if (!(await registered(house.account.address))) {
   if (r.transactionHash) await publicClient.waitForTransactionReceipt({ hash: r.transactionHash as Hex });
   log("house registered with eERC", r.transactionHash ?? "already");
 }
-log("house", `${house.account.address} quotes ${Number(BID) / 100} / ${Number(ASK) / 100} for ${Number(SIZE) / 100} tAVAX`);
+{
+  const q = await quotePrices();
+  log("house", `${house.account.address} quotes ±${Number(SPREAD_BPS) / 100}% around Chainlink AVAX/USD (now ${q.mid}: ${Number(q.bid) / 100} / ${Number(q.ask) / 100}) for ${Number(SIZE) / 100} tAVAX`);
+}
 
 async function registered(user: Hex): Promise<boolean> {
   return (await publicClient.readContract({
@@ -45,7 +64,9 @@ async function quote(b: BatchView) {
   const agentKey = toBytes((await publicClient.readContract({ address: BOOK, abi: bookAbi, functionName: "agentKey" })) as Hex);
   const bond = (await publicClient.readContract({ address: BOOK, abi: bookAbi, functionName: "bond" })) as bigint;
   const vs = await validators();
-  for (const [side, limit] of [[BUY, BID], [SELL, ASK]] as [Side, bigint][]) {
+  const q = await quotePrices();
+  log(`batch ${b.id} house quote`, `Chainlink AVAX/USD ${q.mid} (round ${q.round}) → bid ${Number(q.bid) / 100} / ask ${Number(q.ask) / 100}`);
+  for (const [side, limit] of [[BUY, q.bid], [SELL, q.ask]] as [Side, bigint][]) {
     const s = sealOrder(ctx, { batchId: b.id, closeAt: b.closeAt, trader: house.account.address, side, limit, size: SIZE }, vs, 2, agentKey, selfKey);
     const hash = await house.writeContract({ address: BOOK, abi: bookAbi, functionName: "submitOrder", args: [b.id, s.commitment, s.c.x, s.c.y, s.envelope], value: bond, chain: undefined });
     const r = await publicClient.waitForTransactionReceipt({ hash });
