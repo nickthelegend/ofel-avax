@@ -22,5 +22,20 @@
   "pchain": "https://api.avax-test.network/ext/bc/P",
   "bondWei": "100000000000000000",
   "revealWindowS": 120,
-  "settleWindowS": 900
+  "settleWindowS": 900,
+  "faucet": "0x9aF7eCC1dfD160556b7542A0eA4b37adeC0E0dDC",
+  "faucetOperator": "0x4A566B473E4b59B5a426540aea042DaE5b249b57",
+  "faucetDrip": {
+    "OFEL": "5",
+    "tAVAX": "2000",
+    "tUSDC": "50000",
+    "stockedFor": 200
+  },
+  "house": "0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81",
+  "houseQuote": {
+    "bid": "31.30",
+    "ask": "31.40",
+    "sizeTAVAX": "1000"
+  },
+  "api": "https://ofel-api.201-18-198-162.sslip.io"
 }

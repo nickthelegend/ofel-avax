@@ -68,23 +68,23 @@
     {
       "nodeID": "NodeID-4ofVdRcs3EMcTaBSFWGvJJeemkCYEwA2V",
       "validationID": "2Ktd47KRk5kYhHxHKuAUK7urupwzCTw9t48JbgaDPM1sppMGkD",
-      "balanceAvax": "0.395801",
-      "runsOutUtc": "2026-11-21T13:44:01.489Z",
-      "measuredAt": "2026-11-12T14:59:53.489Z"
+      "balanceAvax": "0.591884",
+      "runsOutUtc": "2026-11-26T00:06:10.000Z",
+      "measuredAt": "2026-11-12T14:59:08.000Z"
     },
     {
       "nodeID": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
       "validationID": "2qwqFW832DkuxDGcsUL7ffHWMMSnftxJMh2Tv8j8bZddKxFR3m",
-      "balanceAvax": "0.395801",
-      "runsOutUtc": "2026-11-21T13:44:01.489Z",
-      "measuredAt": "2026-11-12T14:59:53.489Z"
+      "balanceAvax": "0.591884",
+      "runsOutUtc": "2026-11-26T00:06:10.000Z",
+      "measuredAt": "2026-11-12T14:59:08.000Z"
     },
     {
       "nodeID": "NodeID-L4dJuAW1WS3rssb6yDmViWYHZ1FdGYGxs",
       "validationID": "2UE4tJvT1WQucW1XaSU6WL9cdKPVqoMmJdDGa3z7R1LBFMv1r6",
-      "balanceAvax": "0.395801",
-      "runsOutUtc": "2026-11-21T13:44:01.489Z",
-      "measuredAt": "2026-11-12T14:59:53.489Z"
+      "balanceAvax": "0.591884",
+      "runsOutUtc": "2026-11-26T00:06:10.000Z",
+      "measuredAt": "2026-11-12T14:59:08.000Z"
     }
   ],
   "topups": [
@@ -125,6 +125,61 @@
           "txID": "93GA9cYcFueTymRCTu8e7mGW5JmtDsPHPFEKxGSVtfNRMXNPS",
           "amountAvax": "0.229527",
           "url": "https://subnets-test.avax.network/p-chain/tx/93GA9cYcFueTymRCTu8e7mGW5JmtDsPHPFEKxGSVtfNRMXNPS"
+        }
+      ]
+    },
+    {
+      "at": "2026-11-12T15:12:53.975Z",
+      "txs": [
+        {
+          "kind": "ExportTx C->P",
+          "txID": "2bovUCKcLPM1GVDxpi75mvRvbNKUjAeH6mAiFeTU45A77JraU9",
+          "amountAvax": "0.590000"
+        }
+      ]
+    },
+    {
+      "at": "2026-11-12T14:59:08.000Z",
+      "txs": [
+        {
+          "kind": "ExportTx C->P",
+          "txID": "2bovUCKcLPM1GVDxpi75mvRvbNKUjAeH6mAiFeTU45A77JraU9",
+          "amountAvax": "0.590000"
+        }
+      ]
+    },
+    {
+      "at": "2026-11-12T14:59:08.000Z",
+      "txs": [
+        {
+          "kind": "ExportTx C->P",
+          "txID": "2MGT7tz2SvxytEo6FzR3ap5MTvRbJ3XejiPkTq3syDzCAt43Ki",
+          "amountAvax": "0.589966"
+        },
+        {
+          "kind": "ImportTx C->P",
+          "txID": "2VpXbSZywRW8QjBdYR1GcZqnt3tF7EX4va9bE2J5fvtKVSmFvm"
+        },
+        {
+          "kind": "IncreaseL1ValidatorBalanceTx",
+          "nodeID": "NodeID-4ofVdRcs3EMcTaBSFWGvJJeemkCYEwA2V",
+          "validationID": "2Ktd47KRk5kYhHxHKuAUK7urupwzCTw9t48JbgaDPM1sppMGkD",
+          "txID": "wZCVFvp3CJY1q3eWpbcdsBA367h6WGqPu9pU1yRP9zZ9uFgXF",
+          "amountAvax": "0.196644"
+        },
+        {
+          "kind": "IncreaseL1ValidatorBalanceTx",
+          "nodeID": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
+          "validationID": "2qwqFW832DkuxDGcsUL7ffHWMMSnftxJMh2Tv8j8bZddKxFR3m",
+          "txID": "2ZXeXKuAv6TDcs1VzzEg9KRhh8mcjwJNM5Rqcv34FTqJYx6ch",
+          "amountAvax": "0.196644"
+        },
+        {
+          "kind": "IncreaseL1ValidatorBalanceTx",
+          "nodeID": "NodeID-L4dJuAW1WS3rssb6yDmViWYHZ1FdGYGxs",
+          "validationID": "2UE4tJvT1WQucW1XaSU6WL9cdKPVqoMmJdDGa3z7R1LBFMv1r6",
+          "txID": "YBUp9CJEGiYk2QNkL3aqVLtRas8cmdK2NSMTTJsLVFPvrbpQL",
+          "amountAvax": "0.196644"
         }
       ]
     }

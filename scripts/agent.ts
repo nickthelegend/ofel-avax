@@ -23,6 +23,7 @@ import { encryptedErcAbi } from "@ofel/core";
 import { BOOK, bookAbi, collectSignatures, ctx, getBatch, getEnvelopes, getOrders, batchCount, STATE, validators, type BatchView } from "./lib/book.ts";
 import { deployment, log, publicClient, walletFor } from "./lib/env.ts";
 import { eercFor, privateBalance, privateTransfer } from "./lib/eerc.ts";
+import { startApi } from "./lib/api.ts";
 
 const BATCH_SECONDS = BigInt(process.env.OFEL_BATCH_SECONDS ?? 120);
 const AUTO_OPEN = (process.env.OFEL_AUTO_OPEN ?? "1") === "1";
@@ -59,6 +60,7 @@ if (onChainKey.toLowerCase() !== agentPub.toLowerCase()) {
   log("setAgentKey", await send("setAgentKey", [agentPub]));
 }
 log("agent", `${me} key ${agentPub.slice(0, 18)}…`);
+if (process.env.OFEL_API_PORT) startApi(Number(process.env.OFEL_API_PORT), me);
 
 const nowS = () => BigInt(Math.floor(Date.now() / 1000));
 
