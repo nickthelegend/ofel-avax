@@ -12,7 +12,7 @@ import fujiStatus from "../../../deployments/fuji.json";
 
 const Art = ({ src, className }: { src: string; className?: string }) => (
   <div className={`art ${className ?? ""}`} aria-hidden="true">
-    <img src={src} alt="" width={640} height={640} loading="lazy" />
+    <img src={src} alt="" width={640} height={640} />
   </div>
 );
 
@@ -89,7 +89,7 @@ const WHO: [string, string, string, string, string][] = [
   ["Your balance", "no", "no", "yes", "yes"],
 ];
 const Cell = ({ v }: { v: string }) =>
-  v === "yes" ? <span className="up">Sees it</span> : v === "no" ? <span className="dim">Never</span> : <span className="sealed-word"><Icon name="lock" size={12} />Sealed</span>;
+  v === "yes" ? <span className="up">Yes</span> : v === "no" ? <span className="dim">Never</span> : <span className="sealed-word"><Icon name="lock" size={12} />Sealed</span>;
 
 const CONTRACTS: [string, string | undefined][] = [
   ["OfelBook", cfg.book],
@@ -176,7 +176,7 @@ export function Landing() {
             <dd className="mono">{last ? fix(last.price) : "—"}</dd>
           </div>
           <div>
-            <dt>Orders sealed <small>(last 60 batches with orders)</small></dt>
+            <dt>Orders sealed</dt>
             <dd>{sealedTotal ?? "…"}</dd>
           </div>
           <div>
@@ -255,7 +255,7 @@ export function Landing() {
                 <thead>
                   <tr>
                     <th />
-                    <th>The public</th>
+                    <th>Public</th>
                     <th>Validators</th>
                     <th>Auditor</th>
                     <th>You</th>

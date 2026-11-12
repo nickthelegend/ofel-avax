@@ -826,7 +826,9 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
   .seal-row b { font-size: 26px; }
   .tline b { font-size: 11.5px; }
   .tline span { font-size: 10px; }
-  .who-tbl td, .who-tbl th { padding: 10px 8px; font-size: 12.5px; white-space: normal; }
+  .who-tbl td, .who-tbl th { padding: 10px 6px; font-size: 12.5px; }
+  .who-tbl td:first-child { white-space: normal; min-width: 116px; }
+  .sealed-word .icon { display: none; }
   .runlist li { grid-template-columns: minmax(0, 1fr) auto; }
   .runlist li p.mono { grid-column: 1 / -1; grid-row: 2; }
   .chart-note { bottom: 30px; }
