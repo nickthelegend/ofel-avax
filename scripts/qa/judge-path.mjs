@@ -21,10 +21,27 @@ await withChromeLock(async () => {
   const errors = [];
   try {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    const page = await ctx.newPage();
-    page.on("pageerror", (e) => errors.push(String(e)));
-    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+    let page = await ctx.newPage();
+    let crashed = false;
+    const watch = (p) => {
+      p.on("pageerror", (e) => errors.push(String(e)));
+      p.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      p.on("crash", () => (crashed = true));
+    };
+    watch(page);
+    // The proofs run in the page, so a busy Mac can kill the renderer. The test wallet and the sealed order live in
+    // this context's storage, so a fresh tab picks the run up where it was.
+    const revive = async () => {
+      if (!crashed) return;
+      say("renderer crashed: reopening the desk in a new tab (same wallet)");
+      crashed = false;
+      page = await ctx.newPage();
+      watch(page);
+      await page.goto(`${BASE}/desk`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(8000);
+    };
     const shot = async (name, opts = {}) => {
+      await revive();
       await page.waitForTimeout(600);
       await page.screenshot({ path: `${OUT}/${name}-1440.png`, fullPage: opts.full ?? false });
       if (opts.phone) {
@@ -38,9 +55,17 @@ await withChromeLock(async () => {
       say(`shot ${name}`);
     };
     const btn = (name) => page.getByRole("button", { name });
-    const until = async (what, fn, ms) => {
+    const until = async (what, fn, ms, reloadEvery = 0) => {
       const t0 = Date.now();
+      let last = t0;
       while (Date.now() - t0 < ms) {
+        await revive();
+        if (reloadEvery && Date.now() - last > reloadEvery) {
+          say(`no change for ${reloadEvery / 1000} s while waiting for ${what}: reloading the desk (same wallet)`);
+          last = Date.now();
+          await page.reload({ waitUntil: "networkidle" }).catch(() => (crashed = true));
+          await page.waitForTimeout(8000);
+        }
         if (await fn().catch(() => false)) return true;
         await page.waitForTimeout(1500);
       }
@@ -109,7 +134,7 @@ await withChromeLock(async () => {
       await shot("09-settling");
       await until("the pay-in", async () => (await page.locator("[data-film=settle]").count()) === 0, 5 * 60000);
       await shot("10-paid-in");
-      await until("the agent's payout", async () => (await page.locator("[data-film=order-status] li.done").count()) >= 5, 8 * 60000).catch((e) => say(e.message));
+      await until("the agent's payout", async () => (await page.locator("[data-film=order-status] li.done").count()) >= 5, 8 * 60000, 120000).catch((e) => say(e.message));
       await shot("11-settled", { full: true, phone: "[data-film=order-status]" });
     } else say("no fill to settle (the limit did not cross)");
 

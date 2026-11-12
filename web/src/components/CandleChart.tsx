@@ -144,7 +144,7 @@ export function DeskChart({
           {showLimit && (
             <>
               <line x1={0} x2={plotW} y1={y(limit!)} y2={y(limit!)} className="cc-limit" />
-              {!compact && w >= 560 && <text x={plotW - 6} y={y(limit!) - 5} textAnchor="end" className="cc-limit-t">{limitLabel ?? "Your limit"}</text>}
+              {!compact && w >= 560 && <text x={8} y={y(limit!) - 5} className="cc-limit-t">{limitLabel ?? "Your limit"}</text>}
             </>
           )}
           {marks.map(({ i, c }) => (

@@ -36,7 +36,8 @@ card. Re-score in the last column.
 
 - The faucet's one-per-wallet rule is in the contract (`OfelFaucet.claimed`), not in the server; the relay only pays
   the gas a new wallet doesn't have.
-- The house sees only that a wallet sealed something (the trader address is public); it quotes 31.30 / 31.40 blind and
-  can't read the size or limit it is trading against.
+- The house sees only that a wallet sealed something (the trader address is public); it quotes blind,
+  ±0.15% around Chainlink AVAX/USD on Fuji (fixed 31.30 / 31.40 before batch #210), and can't read the size or limit it
+  is trading against. A stale or unreadable feed means no quote.
 - The desk's runway figures come live from `platform.getL1Validator` on the Fuji P-Chain, counted from the P-Chain's
   own timestamp.

@@ -13,7 +13,8 @@ compliance.
 > chain ID 77077, token OFEL) with three PoA validators on our VPS, and the desk is at
 > **https://ofel-desk.vercel.app**. A judge with an empty wallet picks **Connect → Test wallet**, taps **Get test funds**
 > (OFEL gas and test assets from the Ofel faucet contract on the L1, so no Fuji AVAX is needed), and can seal an order
-> right away. A house wallet quotes blind into any batch you trade in, so your order has a counterparty.
+> right away. A house wallet quotes blind into any batch you trade in, ±0.15% around Chainlink's AVAX/USD on Fuji,
+> so your order has a counterparty at the market price.
 
 > **Prior work:** the desk UI is forked from Eidolon (Total Recall, Nov 2026), the same author's trading terminal: its
 > design system (tokens, Urbanist + Space Mono, cards, buttons, tables) and terminal layout (night market bar, chart,
@@ -23,8 +24,11 @@ compliance.
 
 ## The desk
 
-A trading terminal on Eidolon's UI base: AVAX-USD candles from Coinbase with Chainlink's Fuji feed, the L1's own
-tAVAX/tUSDC clears below them, the sealed book in the middle, the block-order ticket on the right.
+A trading terminal on Eidolon's UI base: AVAX-USD candles from Coinbase with Chainlink's Fuji feed behind them and
+each Ofel batch's clearing price as a dot on the same scale, the sealed book in the middle, the block-order ticket on
+the right. The house quotes ±0.15% around Chainlink AVAX/USD from batch #210 on (`houseQuote` in
+`deployments/fuji-l1.json`); batches before that cleared against a fixed ~31 tUSDC test quote, so the desk keeps them
+in the Batches tab and off the chart and P&L.
 
 ![The desk: market bar, candles with the Chainlink feed and Ofel clears, the sealed book and the ticket](docs/screens/desk-1440.webp)
 

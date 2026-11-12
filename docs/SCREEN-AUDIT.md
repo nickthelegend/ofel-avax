@@ -15,8 +15,8 @@ price → settle privately → claim bond; batch #195, 0 console errors).
 
 | Screen / state | Width | Eidolon counterpart | Score | Notes |
 |---|---|---|---|---|
-| Desk, signed in (chart, sealed book, ticket, tabs) | 1440 | trade-quoted | 9 | Same grid as Eidolon: night market bar, chart left, centre panel, ticket right, tabs below. Market bar: Chainlink AVAX/USD (Fuji), Coinbase AVAX-USD with 1 h change, last Ofel clear, batch countdown, validators online, 1m/5m/15m/1h. Two-pane chart: real candles + Chainlink, and Ofel's clears with batch markers and the typed limit. |
-| Desk | 375 | trade-375 | 9 | Stacks like Eidolon's: bar → chart → ticket → sealed book → tabs. Chart shows 48 candles on phones; limit caption hidden, its axis tag kept. |
+| Desk, signed in (chart, sealed book, ticket, tabs) | 1440 | trade-quoted | 9 | Same grid as Eidolon: night market bar, chart left, centre panel, ticket right, tabs below. Market bar: Chainlink AVAX/USD (Fuji), Coinbase AVAX-USD with 1 h change, last Ofel clear, batch countdown, validators online, 1m/5m/15m/1h. One chart on one scale: real candles, Chainlink as a thin step line behind them, Ofel clears as dots with batch numbers, the typed limit. The house follows Chainlink from batch #210, so the clears sit on the market price; the older ~31 test clears stay in the Batches tab and the caption says so. |
+| Desk | 375 | trade-375 | 9 | Stacks like Eidolon's: bar → chart → ticket → sealed book → tabs. Shorter chart (330 px, 48 candles) and the validators cell left to the sealed book, so the ticket starts within the first screen and a half. |
 | Desk, signed out | 1440 / 375 | trade-empty | 9 | One primary action, "Start with a test wallet"; tabs explain what connecting unlocks. |
 | Desk, new empty wallet (setup) | 1440 / 375 | — | 9 | Three checklist rows and one "Get test funds" button; finished in 30 s on the hosted run. |
 | Ticket mid-seal → sealed → refused → cleared → settled | 1440 / 375 | trade-quoted (dry-run box) | 9 | Live order status under the button: sealed in the browser (bytes, tx), batch closes, validators open it, one price (fill), settled by eERC transfer, claim bond. "Try to open it now" shows `closeBatch` reverting with TooEarly and all three validators refusing. |
@@ -33,7 +33,7 @@ price → settle privately → claim bond; batch #195, 0 console errors).
 | Loading / error | both | — | 9 | Skeletons; errors name the source (e.g. P-Chain). P-Chain reads now try the public mirror first, then the official endpoint (the official one rate-limited this Mac with 429s). |
 
 Still short of a 10, honestly: the 1440 sealed-book panel scrolls inside itself below ~900 px of height (Eidolon's
-ghost panel does the same); the tAVAX/tUSDC pane has few points because the L1 only clears when someone trades.
+ghost panel does the same); clears are sparse dots because the L1 only clears when someone trades.
 
 ## Ship round (Nov 12–13, 2026), the previous desk
 
