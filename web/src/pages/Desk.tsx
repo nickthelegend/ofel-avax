@@ -220,14 +220,14 @@ function Mine({ batches, refreshKey }: { batches?: Batch[]; refreshKey: number }
   return (
     <div className="tbl-wrap">
       <table className="tbl">
-        <thead><tr><th>Batch</th><th>Side</th><th className="r">Size</th><th className="r">Limit</th><th className="r">Fill</th><th className="r">Status</th></tr></thead>
+        <thead><tr><th>Batch</th><th>Side</th><th className="r">Size</th><th className="r hide-sm">Limit</th><th className="r">Fill</th><th className="r">Status</th></tr></thead>
         <tbody>
           {rows.data.map((r) => (
             <tr key={r.tx}>
               <td>#{r.batch.id.toString()}</td>
               <td className={r.mine.side === BUY ? "buy" : "sell"}>{sideLabel(r.mine.side)}</td>
               <td className="r num">{units(r.mine.size)}</td>
-              <td className="r num">{units(r.mine.limit)}</td>
+              <td className="r num hide-sm">{units(r.mine.limit)}</td>
               <td className="r num">{r.fill ? <>{units(r.fill.base)} @ {units(r.batch.price)}</> : <span className="faint">—</span>}</td>
               <td className="r"><StatusPill s={r.order.status} /></td>
             </tr>
@@ -281,7 +281,7 @@ export function Desk() {
                 <button aria-pressed={tab === "mine"} onClick={() => setTab("mine")}>Your orders</button>
                 <button aria-pressed={tab === "batches"} onClick={() => setTab("batches")}>Recent clears</button>
               </div>
-              <Link to="/portfolio" className="btn sm ghost">Portfolio</Link>
+              <Link to="/portfolio" className="btn sm ghost hide-sm">Portfolio</Link>
             </div>
             {tab === "mine" ? (
               <Mine batches={withOrders.data} refreshKey={refreshKey} />
