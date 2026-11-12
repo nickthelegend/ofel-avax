@@ -1,10 +1,11 @@
+// App shell, forked from Eidolon's: a porcelain header with pill nav, the network line and the wallet, then the page.
 import { useEffect, useRef, useState } from "react";
 import { cfg } from "./lib/config";
 import { client } from "./lib/chain";
 import { useLive } from "./lib/hooks";
 import { QA_ROLES, ROLE_LABEL, useWallet } from "./lib/wallet";
 import { short } from "./lib/format";
-import { Empty, Icons, Link, usePath } from "./components/ui";
+import { Icon, Link, Logo, State, usePath } from "./components/ui";
 import { Landing } from "./pages/Landing";
 import { Desk } from "./pages/Desk";
 import { Batches } from "./pages/Batches";
@@ -13,12 +14,14 @@ import { Auditor } from "./pages/Auditor";
 import { Validators } from "./pages/Validators";
 
 const NAV = [
-  { to: "/desk", label: "Desk", icon: Icons.desk },
-  { to: "/batches", label: "Batches", icon: Icons.batches },
-  { to: "/portfolio", label: "Portfolio", icon: Icons.fills },
-  { to: "/auditor", label: "Auditor", icon: Icons.auditor },
-  { to: "/validators", label: "Validators", icon: Icons.validators },
+  { to: "/desk", label: "Desk" },
+  { to: "/batches", label: "Batches" },
+  { to: "/portfolio", label: "Portfolio" },
+  { to: "/validators", label: "Validators" },
+  { to: "/auditor", label: "Auditor" },
 ];
+
+const TITLES: Record<string, string> = { desk: "Desk", batches: "Batches", portfolio: "Portfolio", validators: "Validators", auditor: "Auditor" };
 
 function WalletButton() {
   const w = useWallet();
@@ -26,70 +29,81 @@ function WalletButton() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const on = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", on);
-    return () => document.removeEventListener("mousedown", on);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("mousedown", on);
+      document.removeEventListener("keydown", key);
+    };
   }, []);
   return (
     <div className="wallet" ref={ref}>
-      <button className={w.address ? "btn sm" : "btn sm primary"} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu">
-        {w.address ? (
-          <>
-            <span className="dot" />
-            <span className="mono">{short(w.address)}</span>
-          </>
-        ) : (
-          "Connect"
-        )}
-      </button>
+      {w.address ? (
+        <button className="addr-pill" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" data-film="wallet">
+          <img className="avatar" src="/art/key.webp" alt="" width={26} height={26} />
+          <span className="mono">{short(w.address)}</span>
+          <span className="dim hide-sm">{w.isTest ? "test wallet" : w.isAgent ? "auditor" : ""}</span>
+        </button>
+      ) : (
+        <button className="btn btn-primary btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" data-film="connect">
+          Connect
+        </button>
+      )}
       {open && (
         <div className="menu" role="menu">
           {w.address && (
-            <>
-              <div className="note">
-                {w.label}
-                <br />
-                <span className="mono">{w.address}</span>
-              </div>
-              <div className="sep" />
-            </>
+            <div className="menu-note">
+              <b>{w.label}</b>
+              <span className="mono">{w.address}</span>
+            </div>
           )}
-          {QA_ROLES.map((r) => (
-            <button key={r} role="menuitem" onClick={() => (w.useQa(r), setOpen(false))}>
-              {ROLE_LABEL[r]}
-              <span className="faint mono" style={{ fontSize: 12 }}>local key</span>
-            </button>
-          ))}
           {cfg.faucet && (
-            <button role="menuitem" onClick={() => (w.connectTest(), setOpen(false))}>
-              Test wallet
-              <span className="faint" style={{ fontSize: 12 }}>new key in this browser</span>
+            <button role="menuitem" onClick={() => (w.connectTest(), setOpen(false))} data-film="menu-test-wallet">
+              <span>
+                <b>Test wallet</b>
+                <small>a new key in this browser · free test funds</small>
+              </span>
+              <Icon name="arrow" size={14} />
             </button>
           )}
           <button role="menuitem" onClick={() => (w.connectInjected(), setOpen(false))}>
-            Browser wallet
+            <span>
+              <b>Browser wallet</b>
+              <small>adds the Ofel L1 (chain {cfg.chainId})</small>
+            </span>
+            <Icon name="wallet" size={14} />
           </button>
+          {QA_ROLES.map((r) => (
+            <button key={r} role="menuitem" onClick={() => (w.useQa(r), setOpen(false))}>
+              <span>
+                <b>{ROLE_LABEL[r]}</b>
+                <small>local key</small>
+              </span>
+            </button>
+          ))}
           {w.address && (
-            <>
-              <div className="sep" />
-              <button role="menuitem" onClick={() => (w.disconnect(), setOpen(false))}>
-                Disconnect
-              </button>
-            </>
+            <button role="menuitem" onClick={() => (w.disconnect(), setOpen(false))}>
+              <span>
+                <b>Disconnect</b>
+              </span>
+              <Icon name="x" size={14} />
+            </button>
           )}
-          {!QA_ROLES.length && !cfg.faucet && <div className="note">No test wallet on this network.</div>}
+          {!QA_ROLES.length && !cfg.faucet && <div className="menu-note">No test wallet on this network.</div>}
         </div>
       )}
     </div>
   );
 }
 
-function NetPill() {
+function Net() {
   const h = useLive(() => client.getBlockNumber(), [], 4000);
   return (
-    <span className="netpill wide" title={cfg.rpc}>
-      <span className={h.error ? "dot off" : "dot"} />
-      {h.error ? "L1 unreachable" : cfg.networkLabel}
-      {h.data !== undefined && <span className="faint mono">#{h.data.toString()}</span>}
+    <span className={`net ${h.error ? "" : "net-live"}`} title={cfg.rpc}>
+      <i className={h.error ? "off" : "live"} />
+      {h.error ? "Ofel L1 unreachable" : cfg.fuji ? "LIVE · Ofel L1 on Fuji" : cfg.networkLabel}
+      {h.data !== undefined && <span className="dim">#{h.data.toString()}</span>}
     </span>
   );
 }
@@ -97,47 +111,53 @@ function NetPill() {
 export function App() {
   const path = usePath();
   const w = useWallet();
-  const page = path === "/" ? <Landing /> : path.startsWith("/desk") ? <Desk /> : path.startsWith("/batches") ? <Batches path={path} /> : path.startsWith("/portfolio") ? <Portfolio /> : path.startsWith("/auditor") ? <Auditor /> : path.startsWith("/validators") ? <Validators /> : null;
+  const seg = path.split("/")[1] ?? "";
+  useEffect(() => {
+    document.title = seg ? `Ofel · ${TITLES[seg] ?? "Not found"}` : "Ofel · Trade size without being front-run";
+  }, [seg]);
+
+  if (path === "/") return <div className="site"><a className="skip" href="#main">Skip to content</a><Landing /></div>;
+
+  const page = path.startsWith("/desk") ? <Desk /> : path.startsWith("/batches") ? <Batches path={path} /> : path.startsWith("/portfolio") ? <Portfolio /> : path.startsWith("/auditor") ? <Auditor /> : path.startsWith("/validators") ? <Validators /> : null;
   return (
-    <>
-      <header className="topbar">
-        <Link to="/" className="brand">
-          <img src="/art/mark.webp" alt="" width={28} height={28} />
-          Ofel
-        </Link>
-        <nav className="nav" aria-label="Main">
+    <div className="app">
+      <a className="skip" href="#main">Skip to content</a>
+      <header className="ahead">
+        <Logo />
+        <nav className="ahead-nav" aria-label="App">
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} current={path.startsWith(n.to)}>
               {n.label}
             </Link>
           ))}
         </nav>
-        <span className="spacer" />
-        <NetPill />
-        {path === "/" ? (
-          <Link to="/desk" className="btn sm primary">
-            Open the desk
-          </Link>
-        ) : (
+        <div className="ahead-right">
+          <Net />
           <WalletButton />
-        )}
-      </header>
-      {w.error && path !== "/" && (
-        <div style={{ maxWidth: 1440, margin: "12px auto 0", padding: "0 24px" }}>
-          <div className="note" role="alert">{w.error}</div>
         </div>
+      </header>
+      <nav className="mnav" aria-label="App sections">
+        {NAV.map((n) => (
+          <Link key={n.to} to={n.to} current={path.startsWith(n.to)}>
+            {n.label}
+          </Link>
+        ))}
+      </nav>
+      {w.error && <p className="banner" role="alert">{w.error}</p>}
+      {page ?? (
+        <main className="order" id="main">
+          <State kind="empty" art="empty" title="No page at this address" action={<Link to="/desk" className="btn btn-primary btn-sm">Go to the desk</Link>} />
+        </main>
       )}
-      <main>{page ?? <div className="page"><section className="panel"><Empty title="No page at this address"><Link to="/desk" className="btn sm primary" >Go to the desk</Link></Empty></section></div>}</main>
-      {path !== "/" && (
-        <nav className="tabbar" aria-label="App">
-          {NAV.map((n) => (
-            <Link key={n.to} to={n.to} current={path.startsWith(n.to)}>
-              {n.icon}
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-      )}
-    </>
+      <footer className="term-foot mono">
+        <span>
+          <i className="live" />
+          Chain reads: Ofel L1 {cfg.chainId} · P-Chain Fuji
+        </span>
+        <span>Reference: Chainlink AVAX/USD on Fuji · Coinbase</span>
+        <span>Private balances: eERC (Ava Labs)</span>
+                <span>UI forked from Eidolon · art generated with ChatGPT</span>
+      </footer>
+    </div>
   );
 }
