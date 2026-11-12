@@ -1,7 +1,63 @@
 {
   "network": "fuji",
-  "status": "NOT DEPLOYED",
-  "blockedOn": "A Fuji L1 needs validators that stay up through judging (Nov 16-18). Two options are in scripts/deploy-l1-fuji.md: Builder Console hosted nodes (an account that Nick must create or choose) or three self-hosted Docker validators on Nick's VPS (Nick must answer whether the VPS can run them). Nothing was bought and no account was created.",
-  "cChainContracts": "none: Ofel's seal needs its own L1 validator set; the Fuji C-Chain has no app-readable small validator set, so a C-Chain-only deployment would not be the product",
-  "estimatedCost": "about 1-2 test AVAX for ConvertSubnetToL1 + validator balances (Fuji, from a faucet or the deployer), plus negligible gas"
+  "status": "VALIDATORS RUNNING, L1 NOT CREATED: waiting for Fuji AVAX on the deployer's P-Chain address",
+  "blockedOn": "About 1.25 Fuji AVAX (minimum 0.9) on P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt. Every Ofel/Xorv/Kumi/Juno/Noren test key together holds about 0.5 AVAX on the C-Chain and each project needs its own gas, so none were drained.",
+  "deployer": {
+    "cli_key": "ofelfuji (avalanche-cli key store; also OFEL_DEPLOYER_PK in the gitignored .env.fuji)",
+    "pChain": "P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt",
+    "cChain": "0x5Cc9CBB73d65Eb832342E788929294CD8237148f",
+    "role": "pays CreateSubnet/CreateChain/ConvertSubnetToL1 and the validator balances; PoA validator manager owner and proxy admin; holds the OFEL genesis allocation"
+  },
+  "cost": {
+    "validatorFeeNavaxPerSecond": 512,
+    "perValidatorPerDayAvax": 0.0442,
+    "plannedBalancePerValidatorAvax": 0.4,
+    "lastsDays": 9,
+    "txFeesAvax": "under 0.01"
+  },
+  "l1": {
+    "name": "ofelfuji",
+    "vm": "Subnet-EVM v1.15.3 (rpcchainvm 47)",
+    "vmID": "r4ZfHVjHDXTmiMFdhw82j1E2vE4DUeyM35nrAvRdXABoZjEqq",
+    "chainId": 77077,
+    "token": "OFEL",
+    "genesis": "deployments/fuji-l1-genesis.json",
+    "chainConfig": "deployments/l1-chain-config.fuji.json",
+    "subnetConfig": "deployments/l1-subnet-config.json (k=3, alpha=2)",
+    "validatorManager": "Proof of Authority",
+    "subnetID": null,
+    "blockchainID": null
+  },
+  "validators": [
+    {
+      "name": "v1",
+      "nodeID": "NodeID-4ofVdRcs3EMcTaBSFWGvJJeemkCYEwA2V",
+      "blsPublicKey": "0x8e68ee8dc1b1b762c1bd3e267e95f5cd45c83dedbfb2b548ab3e772a504749bfbcbd0c4e4fee7fa108895dedb02142ab",
+      "uri": "https://ofel-v1.201-18-198-162.sslip.io",
+      "staking": "201.18.198.162:9651"
+    },
+    {
+      "name": "v2",
+      "nodeID": "NodeID-L4dJuAW1WS3rssb6yDmViWYHZ1FdGYGxs",
+      "uri": "https://ofel-v2.201-18-198-162.sslip.io",
+      "staking": "201.18.198.162:9653",
+      "blsPublicKey": "0x8bf78ae4d33899f9106d0e94429b043cd207ad8dde29dad112dfd899cf7bf7f8a689f82cc7834ed295345a46f76bd028"
+    },
+    {
+      "name": "v3",
+      "nodeID": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
+      "uri": "https://ofel-v3.201-18-198-162.sslip.io",
+      "staking": "201.18.198.162:9655",
+      "blsPublicKey": "0x988f643c9805b5216294ad8ada6ebab618fca712f13e3ce2de94823e87839d59b232fe2565cbe1c4039857b98747b78a"
+    }
+  ],
+  "hosting": "avalanchego v1.15.3 in Docker on the hackathon VPS, --partial-sync-primary-network, Fuji P-Chain bootstrapped 2026-11-12; see deploy/vps/ and grokbot/HOSTING.md",
+  "cChainContracts": "none: Ofel's seal needs its own L1 validator set",
+  "nextSteps": [
+    "ssh tunnel to ofel-l1-v1-1:9650 on 127.0.0.1:19650 and run node deploy/vps/fuji-api-shim.mjs (127.0.0.1:19651)",
+    "avalanche blockchain deploy ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji --same-control-key --bootstrap-endpoints https://ofel-v1.201-18-198-162.sslip.io,https://ofel-v2.201-18-198-162.sslip.io,https://ofel-v3.201-18-198-162.sslip.io --balance 0.4 --weight 100 --change-owner-address P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt --convert-only",
+    "VPS: configs/chains/<blockchainID>/config.json + configs/subnets/<subnetID>.json, OFEL_SUBNET_ID/OFEL_CHAIN_ID in /opt/hk/ofel-l1/.env, docker compose up -d",
+    "avalanche contract initValidatorManager ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji --rpc https://ofel-v1.201-18-198-162.sslip.io/ext/bc/<blockchainID>/rpc",
+    "forge script Deploy.s.sol with OFEL_OUT=../deployments/fuji-l1.json, eerc-setup.ts, agent on the VPS (compose profile agent), e2e.ts, web desk with VITE_OFEL_NETWORK=fuji-l1 to Vercel"
+  ]
 }

@@ -42,9 +42,10 @@ local L1; Playwright for QA.
 
 ## Live links
 - **Network:** a local Avalanche network with the Ofel L1. Addresses and every recorded tx hash are in
-  `deployments/local.json`, and the README has the table. There are **no Snowtrace links yet.** The Fuji L1 is waiting
-  on a validator hosting decision (`scripts/deploy-l1-fuji.md`, `deployments/fuji.json`). The demo runs live against the
-  local L1.
+  `deployments/local.json`, and the README has the table. There are **no Snowtrace links yet.** The three Fuji validators run on the
+  hackathon VPS with the Fuji P-Chain synced (NodeIDs and BLS keys in `deployments/fuji.json`), and the L1 is waiting
+  on about 1.25 Fuji AVAX for the deployer's P-Chain address (`scripts/deploy-l1-fuji.md`). The demo runs live against
+  the local L1 until then.
 - **Repo:** (to be pushed by Nick).
 - **Demo video:** (to be recorded live).
 

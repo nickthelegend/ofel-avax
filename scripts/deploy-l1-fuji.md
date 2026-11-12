@@ -1,5 +1,41 @@
 # Deploying the Ofel L1 to Fuji
 
+## Status (2026-11-12, Option B chosen)
+
+- **Done:** three avalanchego v1.15.3 validators run on the hackathon VPS (`deploy/vps/docker-compose.yml`, server folder
+  `/opt/hk/ofel-l1`), each with `--partial-sync-primary-network`, the Subnet-EVM v1.15.3 plugin (rpcchainvm 47) under the
+  VM ID `r4ZfHVjHDXTmiMFdhw82j1E2vE4DUeyM35nrAvRdXABoZjEqq`, and HTTPS through Traefik at
+  `https://ofel-v{1,2,3}.201-18-198-162.sslip.io` (only `/ext/info`, `/ext/health` and the L1 `rpc`/`ws` are routed;
+  9650 is never published). The Fuji P-Chain is bootstrapped on all three (v1 synced from the network in ~15 minutes,
+  v2 and v3 started from a copy of its database). NodeIDs and BLS keys are in `deployments/fuji.json`. The avalanche-cli
+  blockchain `ofelfuji` exists (chain ID 77077, OFEL, Warp on, PoA owner and proxy admin `0x5Cc9…148f`, the CLI key
+  `ofelfuji`), and the genesis is `deployments/fuji-l1-genesis.json`. The agent image is built on the VPS.
+- **Blocked:** about **1.25 Fuji AVAX** (minimum 0.9) on `P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt` (the same key
+  is `0x5Cc9CBB73d65Eb832342E788929294CD8237148f` on the C-Chain). The L1 validator fee on Fuji is 512 nAVAX per second per
+  validator (0.044 AVAX a day), so 0.4 AVAX per validator lasts about 9 days, through judging. CreateSubnet itself needs only
+  ~2,200 nAVAX.
+- **avalanche-cli 1.9.7 vs Fuji:** the CLI calls `platform.getBalance` before every deploy, and the public Fuji API
+  (avalanchego 1.15.3) answers "method not available". Our own node still serves it, so `deploy/vps/fuji-api-shim.mjs`
+  sends only that call to v1 over an SSH tunnel and everything else, including every transaction, to the public API.
+
+### Commands once funded
+
+```bash
+IP=$(ssh -i ~/.ssh/hackathon_vps root@201.18.198.162 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" ofel-l1-v1-1')
+ssh -i ~/.ssh/hackathon_vps -f -N -L 127.0.0.1:19650:$IP:9650 root@201.18.198.162
+node deploy/vps/fuji-api-shim.mjs &
+avalanche blockchain deploy ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji --same-control-key \
+  --bootstrap-endpoints https://ofel-v1.201-18-198-162.sslip.io,https://ofel-v2.201-18-198-162.sslip.io,https://ofel-v3.201-18-198-162.sslip.io \
+  --balance 0.4 --weight 100 --change-owner-address P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt --convert-only
+# VPS: deployments/l1-chain-config.fuji.json -> configs/chains/<blockchainID>/config.json,
+#      deployments/l1-subnet-config.json -> configs/subnets/<subnetID>.json,
+#      OFEL_SUBNET_ID / OFEL_CHAIN_ID in /opt/hk/ofel-l1/.env, then docker compose up -d (tracks the subnet, adds the rpc route)
+avalanche contract initValidatorManager ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji \
+  --rpc https://ofel-v1.201-18-198-162.sslip.io/ext/bc/<blockchainID>/rpc
+```
+
+Then step 4 of Option B below with `--env-file=../.env.fuji` (fresh agent, alice and bob keys, gitignored).
+
 Ofel needs its own L1 because the seal *is* that L1's validator set. On local, the same steps produced the network that
 `deployments/local.json` describes. This runbook covers two hosting options. **Nothing here has been bought, and no
 account has been created.**

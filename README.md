@@ -8,8 +8,11 @@ not by an operator, and balances and fills live in Ava Labs' encrypted ERC (eERC
 compliance.
 
 > Status: everything below runs live on a **local** Avalanche network (avalanchego v1.14.0, one Subnet-EVM L1 with three
-> PoA validators). There is **no Fuji deployment yet**. The Fuji L1 needs validator hosting, and Nick still has to choose
-> the hosting option. See [scripts/deploy-l1-fuji.md](scripts/deploy-l1-fuji.md) and the "What is not done" section.
+> PoA validators). **Fuji, in progress:** the three Ofel validators now run on the hackathon VPS (avalanchego v1.15.3,
+> Subnet-EVM v1.15.3, Fuji P-Chain synced, HTTPS at `ofel-v{1,2,3}.201-18-198-162.sslip.io`). The L1 itself is not
+> created yet: CreateSubnet, CreateChain and ConvertSubnetToL1 need about 1.25 Fuji AVAX on the deployer's P-Chain
+> address, which is not funded. Until then there are no Snowtrace links. See [deployments/fuji.json](deployments/fuji.json)
+> and [scripts/deploy-l1-fuji.md](scripts/deploy-l1-fuji.md).
 
 ## How it works
 
@@ -67,7 +70,8 @@ compliance.
 | `contracts/` | Foundry: `OfelBook.sol`, `Pedersen.sol`, test assets, and Ava Labs eERC vendored at upstream `8dc98cd` with its prod verifiers (Ecosystem License kept in `src/vendor/eerc/LICENSE.md`). |
 | `scripts/` | `agent.ts` (clearing agent and auditor), `trader.ts` (CLI), `e2e.ts` (live suite), `spike.ts` (go/no-go), `eerc-setup.ts`, `topup.ts`, `validator.sh` (stop or start one validator), `qa/shots.mjs`. |
 | `web/` | The desk, built with Vite and React: landing, Desk, Batches, Portfolio, Auditor, Validators. |
-| `deployments/` | `local.json` (live addresses plus the recorded e2e and web-run tx hashes), the L1 chain and subnet configs, and `fuji.json` (not deployed). |
+| `deployments/` | `local.json` (live addresses plus the recorded e2e and web-run tx hashes), the L1 chain and subnet configs, the Fuji genesis, and `fuji.json` (validators running, L1 not created yet). |
+| `deploy/vps/` | Docker compose for the three Fuji validators and the clearing agent on the VPS, and the avalanche-cli API shim. |
 
 ## Live deployment (local network)
 
@@ -117,7 +121,7 @@ pnpm test && pnpm test:live                       # Foundry + unit, then the liv
 
 ## Bonus features, honestly
 
-- **Own L1:** yes. A Subnet-EVM L1 with PoA validators, local for now; Fuji is pending hosting.
+- **Own L1:** yes. A Subnet-EVM L1 with PoA validators, local for now; on Fuji the three validators run and the L1 waits for test AVAX.
 - **Avalanche Warp / ICM:** Warp is the core mechanism. The validator BLS signatures on a Warp message are the decryption
   key. There is no Teleporter or ICTT bridge from the C-Chain: a local L1 can't reach Fuji, so that part is not claimed.
 - **eERC:** yes, used for real. It holds the private balances and the settlement legs, the auditor decrypts every leg,
