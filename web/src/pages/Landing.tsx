@@ -181,9 +181,9 @@ export function Landing() {
             <dd>{sealedTotal ?? "…"}</dd>
           </div>
           <div>
-            <dt>Validators online</dt>
+            <dt>Validators in sync</dt>
             <dd>
-              {vals.data ? vals.data.filter((v) => v.online).length : "…"}
+              {vals.data ? vals.data.filter((v) => v.synced).length : "…"}
               <small>{vals.data ? ` of ${vals.data.length}` : ""}</small>
             </dd>
           </div>
@@ -215,7 +215,7 @@ export function Landing() {
               <p>When the batch closes, the L1's validators sign a Warp message. Any {cfg.threshold} signatures open every order at once. Ask early and the chain refuses.</p>
               <div className="ben-live">
                 <span className="label">Validators right now</span>
-                <p className="ben-quote">{vals.data ? `${vals.data.filter((v) => v.online).length} of ${vals.data.length} online · any ${cfg.threshold} unseal` : "Checking…"}</p>
+                <p className="ben-quote">{vals.data ? `${vals.data.filter((v) => v.synced).length} of ${vals.data.length} in sync · any ${cfg.threshold} unseal` : "Checking…"}</p>
               </div>
             </div>
           </article>

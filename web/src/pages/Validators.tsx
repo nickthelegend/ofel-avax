@@ -9,7 +9,7 @@ export function Validators() {
   const vs = useLive(validatorStatus, [], 4000);
   const bal = useLive(() => (cfg.fuji ? validatorBalances() : Promise.resolve([])), [], 60000);
   const balOf = (nodeID: string) => bal.data?.find((b) => b.nodeID === nodeID);
-  const online = vs.data?.filter((v) => v.online).length ?? 0;
+  const online = vs.data?.filter((v) => v.synced).length ?? 0;
   const total = vs.data?.length ?? 0;
   const ok = !!vs.data && online >= cfg.threshold;
   return (
@@ -21,7 +21,7 @@ export function Validators() {
       </header>
       <div className="order-hero">
         <section className="verdict dark" data-film="validators-online">
-          <span className="label">Online now</span>
+          <span className="label">In sync now</span>
           <p className="verdict-big">
             {vs.data ? online : "—"}
             <span className="dim"> / {vs.data ? total : "—"}</span>
@@ -92,7 +92,7 @@ export function Validators() {
                           </td>
                         )}
                         <td className="mono dim hide-sm">{v.uri?.replace("https://", "") ?? "—"}</td>
-                        <td>{v.online ? <span className="st st-won"><i />Online</span> : <span className="st st-lost"><i />Offline</span>}</td>
+                        <td>{v.synced ? <span className="st st-won"><i />In sync</span> : v.online ? <span className="st st-refused" title={`L1 block ${v.height}, ${v.behind} behind`}><i />Lagging {v.behind} blocks</span> : <span className="st st-lost"><i />Offline</span>}</td>
                       </tr>
                     );
                   })}

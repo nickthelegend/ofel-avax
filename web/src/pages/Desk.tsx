@@ -89,7 +89,7 @@ function MarketBar({
   const last = k.at(-1);
   const hourAgo = last ? [...k].reverse().find((c) => c.t <= last.t - 3600) : undefined;
   const chg = last && hourAgo ? ((last.c - hourAgo.c) / hourAgo.c) * 100 : null;
-  const online = vals?.filter((v) => v.online).length;
+  const online = vals?.filter((v) => v.synced).length;
   return (
     <section className="mbar dark" aria-label="Market" data-film="market-bar">
       <div className="mb-pair">
@@ -119,7 +119,7 @@ function MarketBar({
         <b className="num" data-film="countdown">{l1Err ? "L1 offline" : current ? (open ? countdown(left) : "00:00") : "…"}</b>
       </div>
       <div className="mb-cell mb-vals">
-        <span>Validators online</span>
+        <span>Validators in sync</span>
         <b className="num" title={valsErr}>{online !== undefined ? `${online}/${vals!.length}` : valsErr ? "retrying" : "…"}</b>
       </div>
       <div className="mb-mkts" role="radiogroup" aria-label="Candle interval">
@@ -307,10 +307,10 @@ function BookPanel({ batch, prev, now, vals, refreshKey }: { batch?: Batch; prev
             const c = signed.data?.checks.find((x) => x.nodeID === v.nodeID);
             return (
               <li key={v.nodeID}>
-                <i className={v.online ? "live" : "off"} />
+                <i className={v.synced ? "live" : "off"} />
                 <span className="mono">{short(v.nodeID, 5)}</span>
                 <span className={`small ${c?.ok ? "up" : "dim"}`}>
-                  {!v.online ? "offline" : c ? (c.ok ? "signed · BLS verified" : c.detail.startsWith("refused") ? "not signed yet" : c.detail) : signed.error ? "can't ask" : prev && prev.state < 2 ? "waiting for the close" : "asking…"}
+                  {!v.online ? "offline" : !v.synced ? `lagging · ${v.behind ?? "?"} blocks behind` : c ? (c.ok ? "signed · BLS verified" : c.detail.startsWith("refused") ? "not signed yet" : c.detail) : signed.error ? "can't ask" : prev && prev.state < 2 ? "waiting for the close" : "asking…"}
                 </span>
                 {c?.signature && <code className="sig hide-sm">{bytesToHex(c.signature).slice(0, 12)}…</code>}
               </li>

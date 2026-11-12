@@ -109,8 +109,15 @@ export async function readBook<T>(functionName: string, args: unknown[] = []): P
 export interface ValidatorStatus extends Validator {
   uri?: string;
   online: boolean;
+  /** The L1 block this node has accepted, and how far it is behind the highest of the three. */
+  height?: number;
+  behind?: number;
+  /** Online and within a few blocks of the others: able to sign the next close. */
+  synced: boolean;
   error?: string;
 }
+
+const LAG_BLOCKS = 5;
 
 // The validator set only changes with a P-Chain transaction, so one read serves every panel for five minutes (the
 // public P-Chain endpoint rate-limits busy clients). A failed read is retried on the next call, never cached.
@@ -127,18 +134,28 @@ export async function validatorSet(): Promise<Validator[]> {
 export async function validatorStatus(): Promise<ValidatorStatus[]> {
   const vs = await validatorSet();
   const seen = new Map<string, string>();
+  const heights = new Map<string, number>();
   await Promise.all(
     cfg.validatorURIs.map(async (uri) => {
       try {
         const me = await getNodeIdentity(`${uri}/ext/info`);
         seen.set(me.nodeID, uri);
+        const r = await fetch(rpcOf(uri), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }) });
+        const j = await r.json();
+        if (j.result) heights.set(me.nodeID, Number(j.result));
       } catch {
         /* offline */
       }
     }),
   );
+  const top = Math.max(0, ...heights.values());
   const byEndpoint = new Map<string, string>(cfg.validatorURIs.map((u, i) => [vs[i]?.nodeID ?? "", u]));
-  return vs.map((v) => ({ ...v, uri: seen.get(v.nodeID) ?? byEndpoint.get(v.nodeID), online: seen.has(v.nodeID) }));
+  return vs.map((v) => {
+    const height = heights.get(v.nodeID);
+    const behind = height === undefined ? undefined : top - height;
+    const online = seen.has(v.nodeID);
+    return { ...v, uri: seen.get(v.nodeID) ?? byEndpoint.get(v.nodeID), online, height, behind, synced: online && behind !== undefined && behind <= LAG_BLOCKS };
+  });
 }
 
 export interface SignatureCheck {
