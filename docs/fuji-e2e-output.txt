@@ -1,0 +1,37 @@
+network                        fuji-l1, book 0x40Fb0a21A8736d3cE05008D33888FE207975D5aB
+— batch with all validators    batch 2, closes in 40 s
+✓ buy order sealed             0xb764859421ebd9ee46ae7daa6bec6165912b5b054f88cc1b125f5f37f3c61301
+✓ sell order sealed            0xf53d6d1b7e56ac722b5d94e909ab123442d40326bbc5f7dc300a5a2a1d93720c
+✓ tx input holds only ciphertext 1248 B
+✓ tx input holds only ciphertext 1248 B
+✓ closeBatch before T reverts  error TooEarly
+✓ validator NodeID-4ofVdRc refuses to sign before T 
+✓ validator NodeID-L4dJuAW refuses to sign before T 
+✓ validator NodeID-9by3D2T refuses to sign before T 
+✓ trader reads own sealed order before T 1250 @ 31.5
+✓ batch cleared at one price   price 31.35
+✓ totals proven against commitments buy 125000 sell 90000
+✓ opened with 3 validator signatures batch 2 opened 2/2 envelopes with 3/3 validator signatures
+✓ both orders filled           
+✓ buyer paid in privately      28215 tUSDC 0x3e235ca9acef4d6ad578e549463b59ff609ad927a31878d2b1230ec2c0d85abe
+✓ seller paid in privately     900 tAVAX 0x997835b84556d7e2c465f5b7c48c5cb8590ebb68a6ce393c2494a6ad9607923f
+✓ agent paid out and marked both settled 
+✓ bonds returned               0xa1df3323111844780bf21590768128697f5f6f1821b76762dd5505ef75490877 0xcfe4ce05315a17c04f911829e802d8dc12f0c4555bc725537b962669c8d0fe6e
+✓ auditor decrypts the private legs Transfer 2821500, Transfer 90000, Transfer 90000, Transfer 2821500
+✓ buyer's private tAVAX balance includes the fill 900 tAVAX
+validator stopped              NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX
+— batch with one validator offline batch 3, closes in 33 s
+✓ buy order sealed             0xc491e20cdb1109b6074352efb0119bcc216733d0e8d8040b6649e89bbb37faf2
+✓ sell order sealed            0xd9aa0c3c3d97fd6a3f7f4d50029d93859dc331d64f724ffece5eb13c96e706fe
+✓ tx input holds only ciphertext 1248 B
+✓ tx input holds only ciphertext 1248 B
+✓ batch cleared at one price   price 31.35
+✓ totals proven against commitments buy 125000 sell 90000
+✓ opened with 2 validator signatures batch 3 opened 2/2 envelopes with 2/3 validator signatures
+✓ both orders filled           
+✓ buyer paid in privately      28215 tUSDC 0x69cb75470a22de8bd944e2d057677dc14646379cdb71b3b627c1e27cf6072c2b
+✓ seller paid in privately     900 tAVAX 0x499d187c90e360bfa69e05dbfa7983b6b8c7d26525d5e8fa90d24fc004f2c896
+✓ agent paid out and marked both settled 
+✓ bonds returned               0xcf9675dcd712f2c2f73a05a70d2172d79fe7f1c71dd85d7f6acb312174e9c47c 0xe4f61412c137f87ce287162d04d1f07d4cc3350a48d721e8492f265e69d3af46
+validator restarted            NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX
+PASS                           31 live checks; tx hashes recorded in deployments/fuji-l1.json

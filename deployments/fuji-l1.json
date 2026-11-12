@@ -37,5 +37,60 @@
     "ask": "31.40",
     "sizeTAVAX": "1000"
   },
-  "api": "https://ofel-api.201-18-198-162.sslip.io"
+  "api": "https://ofel-api.201-18-198-162.sslip.io",
+  "e2e": {
+    "startedAt": "2026-11-12T15:22:32.695Z",
+    "batchSeconds": 45,
+    "batchA": {
+      "batchId": "2",
+      "orders": [
+        "0xb764859421ebd9ee46ae7daa6bec6165912b5b054f88cc1b125f5f37f3c61301",
+        "0xf53d6d1b7e56ac722b5d94e909ab123442d40326bbc5f7dc300a5a2a1d93720c"
+      ],
+      "cleared": {
+        "price": "3135",
+        "buyTotal": "125000",
+        "sellTotal": "90000"
+      },
+      "payIns": [
+        "0x3e235ca9acef4d6ad578e549463b59ff609ad927a31878d2b1230ec2c0d85abe",
+        "0x997835b84556d7e2c465f5b7c48c5cb8590ebb68a6ce393c2494a6ad9607923f"
+      ],
+      "payouts": [
+        "0x311c2d380d387fdb5fdee7c080d172cc9618ec63eeed820ecdf0c5ccf854c8f7",
+        "0x896a0a12aeb3d0af3b0567a2083fde4b5af2398449bd6f5ddf7b4f0cf7d89cc3"
+      ],
+      "bondClaims": [
+        "0xa1df3323111844780bf21590768128697f5f6f1821b76762dd5505ef75490877",
+        "0xcfe4ce05315a17c04f911829e802d8dc12f0c4555bc725537b962669c8d0fe6e"
+      ]
+    },
+    "validatorStopped": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
+    "batchB": {
+      "batchId": "3",
+      "orders": [
+        "0xc491e20cdb1109b6074352efb0119bcc216733d0e8d8040b6649e89bbb37faf2",
+        "0xd9aa0c3c3d97fd6a3f7f4d50029d93859dc331d64f724ffece5eb13c96e706fe"
+      ],
+      "cleared": {
+        "price": "3135",
+        "buyTotal": "125000",
+        "sellTotal": "90000"
+      },
+      "payIns": [
+        "0x69cb75470a22de8bd944e2d057677dc14646379cdb71b3b627c1e27cf6072c2b",
+        "0x499d187c90e360bfa69e05dbfa7983b6b8c7d26525d5e8fa90d24fc004f2c896"
+      ],
+      "payouts": [
+        "0x3e7d8e07ace347ddc062172f6d16eec7506379aa806434308dce9541485295e3",
+        "0x7af59baef7758a051f8f9969ecb87efafbfd21d389dc84933a1caefd55dd4d29"
+      ],
+      "bondClaims": [
+        "0xcf9675dcd712f2c2f73a05a70d2172d79fe7f1c71dd85d7f6acb312174e9c47c",
+        "0xe4f61412c137f87ce287162d04d1f07d4cc3350a48d721e8492f265e69d3af46"
+      ]
+    },
+    "checks": 31,
+    "finishedAt": "2026-11-12T15:26:19.609Z"
+  }
 }

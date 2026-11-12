@@ -1,4 +1,4 @@
-// Live end-to-end run on the local Ofel L1 (no mocks). Spawns the clearing agent, then:
+// Live end-to-end run on an Ofel L1, local or Fuji (no mocks). Spawns the clearing agent, then:
 //   1. two traders seal orders; the explorer (tx input) shows only ciphertext
 //   2. opening early fails: contract TooEarly + every validator refuses to sign
 //   3. at T the batch clears at one price; totals proven against Pedersen commitments;
@@ -22,7 +22,7 @@ import {
 import { BaseError, ContractFunctionRevertedError, toBytes, type Hex } from "viem";
 import { getWarpSignature, messageId } from "warplock";
 import { BOOK, bookAbi, ctx, batchCount, getBatch, getEnvelopes, getOrders, validatorEndpoints, validators } from "./lib/book.ts";
-import { deployment, log, NET, publicClient, ROOT, rpcOf, walletFor } from "./lib/env.ts";
+import { deployment, log, NET, publicClient, ROOT, rpcOf, VALIDATOR_URIS, walletFor } from "./lib/env.ts";
 import { eercFor, privateBalance, privateTransfer } from "./lib/eerc.ts";
 
 const BATCH = Number(process.env.OFEL_E2E_BATCH_SECONDS ?? 45);
@@ -36,10 +36,15 @@ const ok = (name: string, cond: boolean, detail = "") => {
 
 // ------------------------------------------------------------------ agent
 const agentLog: string[] = [];
-const agent = spawn(process.execPath, ["--env-file=../.env", "agent.ts"], {
-  cwd: `${ROOT}scripts`,
-  env: { ...process.env, OFEL_BATCH_SECONDS: String(BATCH) },
-});
+// OFEL_E2E_AGENT_LOGS: follow an agent that already runs (the hosted one on the VPS) instead of spawning one,
+// e.g. "ssh -i ~/.ssh/hackathon_vps root@201.18.198.162 docker logs -f --since 1s ofel-l1-agent-1".
+const remoteAgent = process.env.OFEL_E2E_AGENT_LOGS;
+const agent = remoteAgent
+  ? spawn("sh", ["-c", remoteAgent])
+  : spawn(process.execPath, [`--env-file=${process.env.OFEL_ENV_FILE ?? "../.env"}`, "agent.ts"], {
+      cwd: `${ROOT}scripts`,
+      env: { ...process.env, OFEL_BATCH_SECONDS: String(BATCH) },
+    });
 agent.stdout.on("data", (d) => agentLog.push(...String(d).split("\n").filter((l) => l && !l.startsWith("[EERC]"))));
 agent.stderr.on("data", (d) => agentLog.push(...String(d).split("\n").filter((l) => l && !/Experimental|ExperimentalWarning/.test(l))));
 const stopAgent = () => agent.kill();
@@ -177,8 +182,9 @@ try {
   ok("buyer's private tAVAX balance includes the fill", pub.decrypted >= 90_000n, `${Number(pub.decrypted) / 100} tAVAX`);
 
   // 4. One validator offline.
-  const vs = await validators();
-  const down = vs[vs.length - 1].nodeID;
+  // Stop a validator that is not the one serving this suite's (and the agent's) RPC.
+  const eps = await validatorEndpoints();
+  const down = [...eps].reverse().find(([, uri]) => uri !== VALIDATOR_URIS[0])![0];
   execFileSync(`${ROOT}scripts/validator.sh`, ["stop", down]);
   log("validator stopped", down);
   record.validatorStopped = down;
