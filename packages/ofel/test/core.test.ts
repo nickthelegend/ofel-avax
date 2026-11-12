@@ -109,3 +109,28 @@ test("order: signatures for another batch cannot open it", () => {
   const wrong = batchIdentity(ctx, 5n, 1_800_000_000n);
   assert.throws(() => openOrder(s.envelope, wrong, vs.map((x) => x.v), new Map(vs.map((x) => [x.v.nodeID, sig(x.sk, wrong)]))));
 });
+
+test("house ladder: blind, several orders per side, totals never equal one outside order", async () => {
+  const { houseLadder, checkLadder, ladderBand } = await import("../src/ladder.ts");
+  let seed = 7;
+  const rand = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  for (const answer of [830785204n, 835469261n, 3125000000n]) {
+    const { lo, hi } = ladderBand(answer, 15n);
+    for (let i = 0; i < 50; i++) {
+      const l = houseLadder({ answer, rand });
+      for (const side of [BUY, SELL] as const) assert.ok(l.filter((o) => o.side === side).length >= 3 && l.filter((o) => o.side === side).length <= 5);
+      for (const o of l) {
+        assert.ok(o.limit >= lo && o.limit <= hi, "limit inside ±0.15% of Chainlink");
+        assert.equal(o.size % 100n, 0n, "whole tAVAX sizes");
+      }
+      // A 1,000 tAVAX order at Chainlink ±0.5% (the desk's default) on either side: fills in full, and at least
+      // two orders fill on each side, so neither public total equals that order's size.
+      for (const [side, limit] of [[BUY, (answer * 10050n) / 10000n / 1000000n + 1n], [SELL, (answer * 9950n) / 10000n / 1000000n]] as const) {
+        const c = checkLadder(l, { side, size: 100_000n, limit });
+        assert.equal(c.outsideFill, 100_000n);
+        assert.ok(c.buys >= 2 && c.sells >= 2);
+        assert.ok(c.price >= lo && c.price <= hi);
+      }
+    }
+  }
+});
