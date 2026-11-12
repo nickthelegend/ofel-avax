@@ -53,23 +53,26 @@ async function pCommitted(txID: string) {
 // ------------------------------------------------------------------ 1. C -> P export
 const cWei = await c.getBalance({ address: C_ADDR });
 const cNavax = cWei / 10n ** 9n;
-const baseFee = await cApi.getBaseFee(); // wei
-const exportFee = evm.estimateExportCost(ctx, baseFee / 10n ** 9n, 1n, ctx.pBlockchainID, utils.hexToBuffer(C_ADDR), [pAddrBytes], 0n);
+// Atomic tx fees are priced in nAVAX per gas. Fuji's base fee can be far below 1 gwei, and flooring it to 0 makes a
+// tx the C-Chain drops, so round up to whole gwei and add headroom.
+const baseFeeGwei = ((await cApi.getBaseFee()) + 10n ** 9n - 1n) / 10n ** 9n * 2n + 1n;
+const exportFee = evm.estimateExportCost(ctx, baseFeeGwei, cNavax / 2n, ctx.pBlockchainID, utils.hexToBuffer(C_ADDR), [pAddrBytes], 0n);
 const exportAmt = cNavax - KEEP_C - exportFee;
 console.log(`C-Chain ${C_ADDR}: ${avax(cNavax)} AVAX`);
 if (exportAmt > 1_000_000n) {
   console.log(`ExportTx C -> P: ${avax(exportAmt)} AVAX (fee ~${avax(exportFee)}, keeping ${avax(KEEP_C)} on C)`);
   if (!DRY) {
     const nonce = BigInt(await c.getTransactionCount({ address: C_ADDR }));
-    const tx = evm.newExportTxFromBaseFee(ctx, baseFee / 10n ** 9n, exportAmt, ctx.pBlockchainID, utils.hexToBuffer(C_ADDR), [pAddrBytes], nonce);
+    const tx = evm.newExportTxFromBaseFee(ctx, baseFeeGwei, exportAmt, ctx.pBlockchainID, utils.hexToBuffer(C_ADDR), [pAddrBytes], nonce);
     await addTxSignatures({ unsignedTx: tx, privateKeys: [keyBytes] });
     const { txID } = await cApi.issueSignedTx(tx.getSignedTx());
     console.log(`  C export ${txID}`);
     txs.push({ kind: "ExportTx C->P", txID, amountAvax: avax(exportAmt) });
     // The public API has no avax.getAtomicTxStatus; wait until the exported UTXO shows up for the P-Chain instead.
-    for (let i = 0; i < 60; i++) {
+    // Several reads in a row must agree, because the load-balanced public API mixes nodes.
+    for (let i = 0, seen = 0; i < 90 && seen < 3; i++) {
       const { utxos } = await pApi.getUTXOs({ addresses: [P_ADDR], sourceChain: "C" });
-      if (utxos.length) break;
+      seen = utxos.length ? seen + 1 : 0;
       await sleep(2000);
     }
   }
@@ -155,7 +158,9 @@ for (let i = 0; i < 30 && after.some((v) => v.bal < (expected.get(v.validationID
   await sleep(3000);
   after = await l1Validators();
 }
-const now = Date.now();
+// A validator's balance is reported as of the P-Chain's latest block time (Fuji's P-Chain can go minutes without a
+// block), so the runway is counted from that timestamp, not from the wall clock.
+const now = Date.parse((await rpc("platform.getTimestamp", {})).timestamp);
 const runway = after.map((v) => {
   const end = new Date(now + Number((v.bal / FEE_PER_S) * 1000n));
   console.log(`${v.nodeID}  ${avax(v.bal)} AVAX  runs out ~${end.toISOString().slice(0, 16).replace("T", " ")} UTC (${(Number(v.bal / FEE_PER_S) / 86400).toFixed(1)} days at ${FEE_PER_S} nAVAX/s)`);
