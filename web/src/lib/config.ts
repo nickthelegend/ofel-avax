@@ -24,6 +24,9 @@ export const cfg = {
   threshold: dep.threshold,
   validatorURIs: dep.validatorURIs,
   pchain: dep.pchain,
+  /** P-Chain endpoints in order: the public mirror first (the official endpoint rate-limits busy clients), then the
+   * deployment's own. Both serve the same Fuji P-Chain. */
+  pchains: dep.pchain.includes("avax-test.network") ? ["https://avalanche-fuji-p-chain-rpc.publicnode.com", dep.pchain] : [dep.pchain],
   rpc: `${dep.validatorURIs[0]}/ext/bc/${dep.blockchainID}/rpc`,
   book: dep.ofelBook as Hex,
   eerc: dep.encryptedERC as Hex,

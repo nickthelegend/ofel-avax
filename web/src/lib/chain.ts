@@ -117,7 +117,7 @@ export interface ValidatorStatus extends Validator {
 let setCache: { at: number; p: Promise<Validator[]> } | undefined;
 export async function validatorSet(): Promise<Validator[]> {
   if (!setCache || Date.now() - setCache.at > 300_000) {
-    const p = getL1Validators(cfg.pchain, cfg.subnetID);
+    const p = firstOk(cfg.pchains.map((u) => () => getL1Validators(u, cfg.subnetID)));
     setCache = { at: Date.now(), p };
     p.catch(() => (setCache = undefined));
   }
@@ -182,8 +182,25 @@ export interface ValidatorBalance {
   runsOut: number; // unix seconds, at the 512 nAVAX/s validator fee
 }
 
+/** The first endpoint that answers wins; if none does, the last error is shown. */
+async function firstOk<T>(tries: (() => Promise<T>)[]): Promise<T> {
+  let err: unknown;
+  for (const t of tries) {
+    try {
+      return await t();
+    } catch (e) {
+      err = e;
+    }
+  }
+  throw err;
+}
+
 async function pcall<T>(method: string, params: unknown): Promise<T> {
-  const r = await fetch(cfg.pchain, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  return firstOk(cfg.pchains.map((u) => () => pcallAt<T>(u, method, params)));
+}
+
+async function pcallAt<T>(url: string, method: string, params: unknown): Promise<T> {
+  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
   const j = await r.json();
   if (!j.result) throw new Error(`${method}: ${j.error?.message ?? r.status}`);
   return j.result as T;

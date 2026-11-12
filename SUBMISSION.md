@@ -55,7 +55,9 @@ Fuji L1; Playwright for QA.
 - **Repo:** (to be pushed by Nick).
 - **Demo video:** (link to be added after upload). Film: `grokbot/videos/ofel-avax/ofel-avax-film.mp4` (2:43, 1080p) and
   `ofel-avax-film-share.mp4` (720p, 9.4 MB), recorded live on the hosted desk on Nov 12 (batch #94, from an empty
-  test wallet to settlement); sources, judge notes and QA in `grokbot/videos/ofel-avax/film/`.
+  test wallet to settlement); sources, judge notes and QA in `grokbot/videos/ofel-avax/film/`. That film shows the
+  previous desk; the desk was rebuilt on Nov 13 as a trading terminal on Eidolon's UI base (see README, Prior work),
+  and a new film on it waits for Nick's UI review.
 
 ## Tests
 35 Foundry tests, 17 unit tests and 31 live end-to-end checks on the Fuji L1, including stopping a validator; plus the
