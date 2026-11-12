@@ -4,7 +4,10 @@
   "packageManager": "pnpm@10.29.2",
   "type": "module",
   "scripts": {
+    "test": "pnpm test:contracts && pnpm test:unit",
     "test:contracts": "cd contracts && forge test",
-    "test:warplock": "pnpm --filter warplock test"
+    "test:unit": "pnpm --filter warplock test && pnpm --filter @ofel/core test",
+    "test:live": "cd scripts && node --env-file=../.env e2e.ts",
+    "agent": "cd scripts && node --env-file=../.env agent.ts"
   }
 }
