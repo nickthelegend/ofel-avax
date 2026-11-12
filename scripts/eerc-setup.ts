@@ -3,6 +3,7 @@
 import { EERC } from "@avalabs/eerc-sdk/dist/index.js";
 import { erc20Abi, parseAbi, parseUnits } from "viem";
 import { circuitURLs, deployment, log, publicClient, walletFor } from "./lib/env.ts";
+import { privateBalance } from "./lib/eerc.ts";
 
 const eercAbi = parseAbi([
   "function setAuditorPublicKey(address user)",
@@ -32,9 +33,11 @@ if (!(await publicClient.readContract({ address: deployment.encryptedERC, abi: e
 }
 log("auditor", await publicClient.readContract({ address: deployment.encryptedERC, abi: eercAbi, functionName: "auditor" }));
 
-async function fund(name: "alice" | "bob", token: `0x${string}`, decimals: number, whole: string) {
+async function fund(name: "alice" | "bob" | "agent", token: `0x${string}`, decimals: number, whole: string) {
   const w = roles[name];
   const amount = parseUnits(whole, decimals);
+  const have = await privateBalance(clients[name], w.account.address, token);
+  if (have.decrypted > 0n) return log(`deposit ${name}`, `skipped, already holds ${have.decrypted} private units`);
   let h = await deployer.writeContract({ address: token, abi: tokenAbi, functionName: "mint", args: [w.account.address, amount] });
   await publicClient.waitForTransactionReceipt({ hash: h });
   h = await w.writeContract({ address: token, abi: erc20Abi, functionName: "approve", args: [deployment.encryptedERC, amount] });
@@ -45,5 +48,8 @@ async function fund(name: "alice" | "bob", token: `0x${string}`, decimals: numbe
 }
 await fund("alice", deployment.tUSDC, 6, "100000");
 await fund("bob", deployment.tAVAX, 18, "5000");
+// The clearing agent keeps a small float so rounding never blocks a payout.
+await fund("agent", deployment.tUSDC, 6, "1000");
+await fund("agent", deployment.tAVAX, 18, "50");
 log("done in", `${Date.now() - t0} ms`);
 process.exit(0); // snarkjs keeps worker threads alive

@@ -1,0 +1,12 @@
+{
+  "consensusParameters": {
+    "k": 3,
+    "alphaPreference": 2,
+    "alphaConfidence": 2,
+    "beta": 4,
+    "concurrentRepolls": 4,
+    "optimalProcessing": 10,
+    "maxOutstandingItems": 256,
+    "maxItemProcessingTime": 30000000000
+  }
+}
