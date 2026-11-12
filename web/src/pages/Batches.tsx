@@ -179,7 +179,7 @@ function Detail({ id }: { id: bigint }) {
                 <thead>
                   <tr>
                     <th className="hide-sm">#</th>
-                    <th>Trader</th>
+                    <th className="hide-sm">Trader</th>
                     <th>Side</th>
                     <th>Limit</th>
                     <th>Size</th>
@@ -193,7 +193,7 @@ function Detail({ id }: { id: bigint }) {
                     return (
                       <tr key={o.index}>
                         <td className="mono hide-sm">{o.index}</td>
-                        <td><Hash v={o.trader} /></td>
+                        <td className="hide-sm"><Hash v={o.trader} /></td>
                         <td>{o.side ? <span className={`spill spill-${o.side === BUY ? "up" : "down"}`}><Icon name={o.side === BUY ? "up" : "down"} size={12} />{o.side === BUY ? "Buy" : "Sell"}</span> : <span className="dim">sealed</span>}</td>
                         <td className="mono">{o.side ? units(o.limit) : <span className="dim">sealed</span>}</td>
                         <td><code className="ci-hex" title={`C = (${o.cx}, ${o.cy})`}>C {short("0x" + o.cx.toString(16), 4)}</code></td>
