@@ -15,6 +15,12 @@ compliance.
 > (OFEL gas and test assets from the Ofel faucet contract on the L1, so no Fuji AVAX is needed), and can seal an order
 > right away. A house wallet quotes blind into any batch you trade in, so your order has a counterparty.
 
+> **Prior work:** the desk UI is forked from Eidolon (Total Recall, Nov 2026), the same author's trading terminal: its
+> design system (tokens, Urbanist + Space Mono, cards, buttons, tables) and terminal layout (night market bar, chart,
+> centre panel, order ticket, tabbed tables). Everything wired to it here (the sealed book, the batch timeline, the
+> validator signatures, eERC balances, settlement and the auditor view) and every contract, circuit and the warplock
+> library are Ofel's own. The candle and Chainlink helpers are ported from Kumi (same author).
+
 ## How it works
 
 1. **The seal: warplock.** Each batch has a close time T. The trader's browser encrypts the order to the exact bytes of

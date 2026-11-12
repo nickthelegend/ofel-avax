@@ -17,7 +17,11 @@ mkdirSync(OUT, { recursive: true });
 const batch = process.env.OFEL_QA_BATCH ?? "50";
 const ROUTES = [
   { name: "landing", path: "/" },
-  { name: "desk", path: "/desk", as: "alice", click: ["Decrypt my orders"] },
+  { name: "desk", path: "/desk", as: "alice" },
+  { name: "desk-clears", path: "/desk#clears", as: "alice" },
+  { name: "desk-batches", path: "/desk#batches" },
+  { name: "desk-balances", path: "/desk#balances", as: "alice" },
+  { name: "desk-auditor", path: "/desk#auditor", as: "agent", click: ["Derive the auditor key and decrypt"] },
   { name: "batches", path: "/batches" },
   { name: "batch-detail", path: `/batches/${batch}`, click: ["Fetch and verify signatures"] },
   { name: "portfolio", path: "/portfolio", as: "alice", click: ["Decrypt my balances", "Decrypt my orders"] },
@@ -48,7 +52,7 @@ await withChromeLock(async () => {
         page.on("pageerror", (e) => errors.push(String(e)));
         page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
         await page.goto(BASE + r.path, { waitUntil: "networkidle" });
-        await page.waitForTimeout(2500);
+        await page.waitForTimeout(Number(process.env.OFEL_QA_WAIT ?? 2500));
         for (const label of r.click ?? []) {
           const b = page.getByRole("button", { name: label });
           if (await b.count()) { await b.first().click(); await page.waitForTimeout(5000); }
