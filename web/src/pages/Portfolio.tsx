@@ -1,185 +1,243 @@
+// Your side of the desk: private balances (eERC, decrypted only in this browser), your orders decrypted with a key
+// derived from your wallet signature, fills at each batch's one price, P&L marked at the last clear, and settlement.
 import { useState } from "react";
 import { BUY } from "@ofel/core";
-import { parseAbiItem, type Hex } from "viem";
 import { cfg } from "../lib/config";
-import { batchesWithOrders, bookAbi, client } from "../lib/chain";
-import { eercFor, isRegistered, privateBalance, privateTransfer } from "../lib/eerc";
+import { batchesWithOrders } from "../lib/chain";
+import { eercFor, isRegistered, privateBalance } from "../lib/eerc";
 import { useLive } from "../lib/hooks";
 import { units } from "../lib/format";
-import { myOrders, sideLabel, type MyRow } from "../lib/orders";
+import { myOrders, type MyRow } from "../lib/orders";
+import { claimBond, payIn, payInLeg, payInOnChain } from "../lib/settle";
+import { fix, ofelClears, type Clear } from "../lib/market";
 import { useWallet } from "../lib/wallet";
-import { Amount, Empty, ErrorBox, Hash, Skel } from "../components/ui";
-import { StatusPill } from "./Desk";
+import { Amount, AvaxDisc, Hash, Icon, Link, Skel, State, StatusPill, UsdcDisc } from "../components/ui";
 
-const clearedEvent = parseAbiItem("event BatchCleared(uint256 indexed batchId, uint64 price, uint64 buyTotal, uint64 sellTotal, uint32 filled)");
-const transferEvent = parseAbiItem("event PrivateTransfer(address indexed from, address indexed to, uint256[7] auditorPCT, address indexed auditorAddress)");
-
-async function payInOnChain(me: Hex, batchId: bigint): Promise<Hex | undefined> {
-  const [c] = await client.getLogs({ address: cfg.book, event: clearedEvent, args: { batchId }, fromBlock: 0n, toBlock: "latest" });
-  if (!c) return undefined;
-  const ts = await client.getLogs({ address: cfg.eerc, event: transferEvent, args: { from: me, to: cfg.agent }, fromBlock: c.blockNumber, toBlock: "latest" });
-  return ts[0]?.transactionHash;
+/** A test wallet signs locally, so its orders and balances decrypt without a prompt; a browser wallet asks first. */
+function useAutoUnlock(): [boolean, () => void] {
+  const w = useWallet();
+  const [asked, setAsked] = useState(false);
+  return [w.isTest || w.label?.includes("(QA)") || asked, () => setAsked(true)];
 }
 
-function Balances() {
+function ConnectState({ what }: { what: string }) {
   const w = useWallet();
-  const [go, setGo] = useState(0);
+  return (
+    <State kind="setup" title={`Connect to see your ${what}`} action={cfg.faucet ? <button className="btn btn-primary btn-sm" onClick={() => w.connectTest()}>Start with a test wallet</button> : undefined}>
+      They are encrypted on chain and decrypted only in your browser.
+    </State>
+  );
+}
+
+// ------------------------------------------------------------------ private balances
+export function PrivateBalances({ lastClear }: { lastClear?: Clear }) {
+  const w = useWallet();
+  const [unlocked, unlock] = useAutoUnlock();
   const bal = useLive(
     async () => {
-      if (!w.client || !w.address || !go) return undefined;
+      if (!w.client || !w.address || !unlocked) return undefined;
       if (!(await isRegistered(w.address))) return { registered: false as const };
       const e = await eercFor(w.client);
       const [a, u] = await Promise.all([privateBalance(e, w.address, cfg.tAVAX), privateBalance(e, w.address, cfg.tUSDC)]);
-      return { registered: true as const, a: a.decrypted, u: u.decrypted };
+      return { registered: true as const, a, u };
     },
-    [w.address, go],
-    8000,
+    [w.address, unlocked],
+    10000,
   );
-  return (
-    <section className="panel" style={{ overflow: "hidden" }}>
-      <div className="book-hero">
-        <div>
-          <div className="muted">Private balances · eERC on the Ofel L1</div>
-          {!w.address && <p className="muted">Connect a wallet to read your encrypted balances.</p>}
-          {w.address && !go && (
-            <>
-              <p className="muted" style={{ maxWidth: 520 }}>Encrypted on-chain. Only this browser and the auditor can read them.</p>
-              <button className="btn primary" onClick={() => setGo(1)}>Decrypt my balances</button>
-            </>
-          )}
-          {bal.error && <ErrorBox>{bal.error}</ErrorBox>}
-          {go > 0 && !bal.data && !bal.error && <div className="stack" style={{ marginTop: 12 }}><Skel w="60%" /><Skel w="40%" /></div>}
-          {bal.data && !bal.data.registered && <div className="note" style={{ marginTop: 12 }}>This wallet is not registered with the eERC yet, so it holds no private balance.</div>}
-          {bal.data?.registered && (
-            <div className="row wrap" style={{ gap: 40, marginTop: 12 }}>
-              <div><Amount v={bal.data.a} unit="tAVAX" big /></div>
-              <div><Amount v={bal.data.u} unit="tUSDC" big /></div>
-            </div>
-          )}
-        </div>
-        <img className="eclipse float art-sm" style={{ width: 180, height: 180 }} src="/art/coins.webp" alt="" width={180} height={180} />
+  if (!w.address) return <ConnectState what="balances" />;
+  if (!unlocked)
+    return (
+      <State kind="setup" art="key" title="Your balances are encrypted, even here" action={<button className="btn btn-primary btn-sm" onClick={unlock}>Decrypt in this browser</button>}>
+        Decrypting asks your wallet for one signature.
+      </State>
+    );
+  if (bal.error) return <State kind="error" title="Can't read the private balance">{bal.error}</State>;
+  if (!bal.data)
+    return (
+      <div className="bal-grid">
+        <Skel h={84} />
+        <Skel h={84} />
       </div>
-    </section>
+    );
+  if (!bal.data.registered) return <State kind="setup" title="No private balance yet">Seal your first order: the ticket gets test funds and registers this wallet's eERC key.</State>;
+  const value = lastClear ? Number(bal.data.a.decrypted) / 100 * lastClear.price + Number(bal.data.u.decrypted) / 100 : null;
+  return (
+    <div className="bal-grid" data-film="balances">
+      <div className="bal">
+        <AvaxDisc size={34} />
+        <div>
+          <span className="label">tAVAX · private</span>
+          <b><Amount v={bal.data.a.decrypted} /></b>
+          <code className="dim">on chain: {bal.data.a.encrypted[0].toString(16).slice(0, 18)}…</code>
+        </div>
+      </div>
+      <div className="bal">
+        <UsdcDisc size={34} />
+        <div>
+          <span className="label">tUSDC · private</span>
+          <b><Amount v={bal.data.u.decrypted} /></b>
+          <code className="dim">on chain: {bal.data.u.encrypted[0].toString(16).slice(0, 18)}…</code>
+        </div>
+      </div>
+      <div className="bal bal-sum">
+        <div>
+          <span className="label">Worth at the last clear</span>
+          <b className="num">{value != null ? `${fix(value)} tUSDC` : "—"}</b>
+          <small className="dim">{lastClear ? `tAVAX at ${fix(lastClear.price)}, batch #${lastClear.batchId}` : "no clear yet"}</small>
+        </div>
+      </div>
+    </div>
   );
 }
 
+// ------------------------------------------------------------------ orders, fills, P&L
 function SettleCell({ r, onDone }: { r: MyRow; onDone: () => void }) {
   const w = useWallet();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
-  const sent = useLive(() => (w.address && r.order.status === 5 ? payInOnChain(w.address, r.batch.id) : Promise.resolve(undefined)), [w.address, r.order.status], 5000);
-  if (r.order.status === 4 || r.order.status === 6) {
+  const sent = useLive(() => (w.address && r.order.status === 5 ? payInOnChain(w.address, r.batch.id) : Promise.resolve(undefined)), [w.address, r.order.status], 6000);
+  const run = async (f: () => Promise<unknown>) => {
+    setBusy(true);
+    setErr(undefined);
+    try {
+      await f();
+      onDone();
+      sent.refresh();
+    } catch (e) {
+      setErr((e as Error).message.split("\n")[0].slice(0, 160));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (r.order.status === 4 || r.order.status === 6)
     return (
-      <button
-        className="btn sm"
-        disabled={busy}
-        onClick={async () => {
-          if (!w.client?.account) return;
-          setBusy(true);
-          setErr(undefined);
-          try {
-            const h = await w.client.writeContract({ address: cfg.book, abi: bookAbi, functionName: "claimBond", args: [r.batch.id, r.order.index], account: w.client.account, chain: undefined });
-            await client.waitForTransactionReceipt({ hash: h });
-            onDone();
-          } catch (e) {
-            setErr((e as Error).message.split("\n")[0].slice(0, 160));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        {busy ? "Claiming…" : "Claim bond"}
-      </button>
+      <span className="acts-in">
+        <button className="btn btn-ghost btn-xs" disabled={busy} onClick={() => run(() => claimBond(w.client!, r.batch.id, r.order.index))}>
+          {busy ? "Claiming…" : "Claim bond"}
+        </button>
+        {err && <small className="down">{err}</small>}
+      </span>
     );
-  }
-  if (r.order.status !== 5 || !r.fill) return <span className="faint">—</span>;
-  if (sent.data) return <span className="muted" style={{ fontSize: 13 }}>Paid in <Hash v={sent.data} />, waiting for the agent</span>;
-  const token = r.mine.side === BUY ? cfg.tUSDC : cfg.tAVAX;
-  const amount = r.mine.side === BUY ? r.fill.quote : r.fill.base;
+  if (r.order.status !== 5 || !r.fill) return <span className="dim small">—</span>;
+  if (sent.data) return <span className="dim small">paid in <Hash v={sent.data} /></span>;
+  const leg = payInLeg(r)!;
   return (
-    <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-      <button
-        className="btn sm primary"
-        disabled={busy}
-        onClick={async () => {
-          if (!w.client?.account || !w.address) return;
-          setBusy(true);
-          setErr(undefined);
-          try {
-            const e = await eercFor(w.client);
-            await privateTransfer(e, w.address, cfg.agent, token, amount, `ofel:${r.batch.id}:${r.order.index}:in`);
-            sent.refresh();
-          } catch (e) {
-            setErr((e as Error).message.split("\n")[0].slice(0, 200));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        {busy ? "Proving and sending…" : `Pay ${units(amount)} ${r.mine.side === BUY ? "tUSDC" : "tAVAX"} privately`}
+    <span className="acts-in">
+      <button className="btn btn-accent btn-xs" disabled={busy} onClick={() => run(() => payIn(w.client!, w.address!, r))}>
+        {busy ? "Proving…" : `Pay ${units(leg.amount)} ${leg.sym}`}
       </button>
-      {err && <span className="sell" style={{ fontSize: 12.5, maxWidth: 260 }}>{err}</span>}
+      {err && <small className="down">{err}</small>}
+    </span>
+  );
+}
+
+function PnlSummary({ rows, mark }: { rows: MyRow[]; mark?: Clear }) {
+  const fills = rows.filter((r) => r.fill);
+  const bought = fills.filter((r) => r.mine.side === BUY).reduce((s, r) => s + Number(r.fill!.base) / 100, 0);
+  const sold = fills.filter((r) => r.mine.side !== BUY).reduce((s, r) => s + Number(r.fill!.base) / 100, 0);
+  const pnl = mark ? fills.reduce((s, r) => s + (Number(r.fill!.base) / 100) * (r.mine.side === BUY ? mark.price - Number(r.batch.price) / 100 : Number(r.batch.price) / 100 - mark.price), 0) : null;
+  const tone = pnl == null || Math.abs(pnl) < 0.005 ? "" : pnl > 0 ? "up" : "down";
+  return (
+    <div className="wl-sum" data-film="pnl">
+      <div><span className="label">Orders</span><b className="num">{rows.length}</b></div>
+      <div><span className="label">Filled</span><b className="num">{fills.length}</b></div>
+      <div><span className="label">Bought</span><b className="num up">{fix(bought)}</b></div>
+      <div><span className="label">Sold</span><b className="num down">{fix(sold)}</b></div>
+      <div className="wl-net">
+        <span className="label">P&amp;L at last clear</span>
+        <b className={`num ${tone}`}>{pnl == null ? "—" : `${pnl > 0.005 ? "+" : pnl < -0.005 ? "−" : ""}${fix(Math.abs(pnl))} tUSDC`}</b>
+      </div>
+      {mark && <p className="form-note">Fills marked at batch #{mark.batchId.toString()}'s {fix(mark.price)} tUSDC. Sizes come from your own decrypted orders; the chain never shows them.</p>}
     </div>
   );
 }
 
-function Orders() {
+export function MyOrdersTable({ refreshKey = 0, lastClear }: { refreshKey?: number; lastClear?: Clear }) {
   const w = useWallet();
-  const [go, setGo] = useState(0);
+  const [unlocked, unlock] = useAutoUnlock();
   const [k, setK] = useState(0);
-  const batches = useLive(() => batchesWithOrders(15), [], 5000);
+  const batches = useLive(() => batchesWithOrders(15), [refreshKey], 6000);
   const rows = useLive(
-    async () => (w.address && batches.data && go ? myOrders(w.address, await w.selfKey(), batches.data) : undefined),
-    [w.address, go, k, batches.data?.map((b) => `${b.id}:${b.state}:${b.revealedCount}`).join(",")],
-    6000,
+    async () => (w.address && batches.data && unlocked ? myOrders(w.address, await w.selfKey(), batches.data) : undefined),
+    [w.address, unlocked, k, refreshKey, batches.data?.map((b) => `${b.id}:${b.state}:${b.revealedCount}`).join(",")],
+    0,
   );
+  const st = useLive(() => (lastClear ? Promise.resolve(lastClear) : ofelClears().then((c) => c.at(-1))), [lastClear?.batchId], 0);
+  if (!w.address) return <ConnectState what="orders" />;
+  if (!unlocked)
+    return (
+      <State kind="setup" art="key" title="Your orders are sealed, even here" action={<button className="btn btn-primary btn-sm" onClick={unlock}>Decrypt my orders</button>}>
+        The key is derived from one wallet signature and stays in this browser.
+      </State>
+    );
+  if (rows.error) return <State kind="error" title="Can't decrypt your orders">{rows.error}</State>;
+  if (!rows.data)
+    return (
+      <div className="skels">
+        <Skel h={40} />
+        <Skel h={40} />
+      </div>
+    );
+  if (!rows.data.length) return <State kind="empty" art="empty" title="No orders from this wallet yet">Seal one with the ticket; it shows up here, readable only by you.</State>;
   return (
-    <section className="panel">
-      <div className="panel-h"><h3>Fills and settlement</h3><span className="muted" style={{ fontSize: 13 }}>Decrypted only in this browser</span></div>
-      {!w.address && <Empty art="key" title="Connect to see your fills" />}
-      {w.address && !go && <Empty art="key" title="Your orders are sealed, even here"><button className="btn sm primary" style={{ marginTop: 8 }} onClick={() => setGo(1)}>Decrypt my orders</button></Empty>}
-      {rows.error && <div className="panel-b"><ErrorBox>{rows.error}</ErrorBox></div>}
-      {go > 0 && !rows.data && !rows.error && <div className="panel-b stack"><Skel /><Skel /></div>}
-      {rows.data?.length === 0 && <Empty title="No orders from this wallet yet" />}
-      {!!rows.data?.length && (
-        <div className="tbl-wrap">
-          <table className="tbl">
-            <thead><tr><th>Batch</th><th>Side</th><th className="r">Size</th><th className="r hide-sm">Limit</th><th className="r">Filled</th><th className="r">Price</th><th className="r">Notional</th><th className="r">Status</th><th className="r">Action</th></tr></thead>
-            <tbody>
-              {rows.data.map((r) => (
-                <tr key={r.tx}>
-                  <td>#{r.batch.id.toString()}</td>
-                  <td className={r.mine.side === BUY ? "buy" : "sell"}>{sideLabel(r.mine.side)}</td>
-                  <td className="r num">{units(r.mine.size)}</td>
-                  <td className="r num hide-sm">{units(r.mine.limit)}</td>
-                  <td className="r num">{r.fill ? units(r.fill.base) : <span className="faint">—</span>}</td>
-                  <td className="r num">{r.fill ? units(r.batch.price) : <span className="faint">—</span>}</td>
-                  <td className="r num">{r.fill ? units(r.fill.quote) : <span className="faint">—</span>}</td>
-                  <td className="r"><StatusPill s={r.order.status} /></td>
-                  <td className="r"><SettleCell r={r} onDone={() => setK((x) => x + 1)} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+    <>
+      <PnlSummary rows={rows.data} mark={st.data} />
+      <table className="tbl" data-film="my-orders">
+        <thead>
+          <tr>
+            <th>Batch</th>
+            <th>Side</th>
+            <th>Size <i>tAVAX</i></th>
+            <th className="hide-sm">Limit <i>tUSDC</i></th>
+            <th>Fill</th>
+            <th className="hide-sm">Notional <i>tUSDC</i></th>
+            <th>Status</th>
+            <th className="acts" />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.data.map((r) => (
+            <tr key={r.tx}>
+              <td className="mono"><Link to={`/batches/${r.batch.id}`}>#{r.batch.id.toString()}</Link></td>
+              <td><span className={`spill spill-${r.mine.side === BUY ? "up" : "down"}`}><Icon name={r.mine.side === BUY ? "up" : "down"} size={12} />{r.mine.side === BUY ? "Buy" : "Sell"}</span></td>
+              <td className="mono">{units(r.mine.size)}</td>
+              <td className="mono hide-sm">{units(r.mine.limit)}</td>
+              <td className="mono">{r.fill ? <>{units(r.fill.base)} <small>@ {units(r.batch.price)}</small></> : <span className="dim">—</span>}</td>
+              <td className="mono hide-sm">{r.fill ? units(r.fill.quote) : "—"}</td>
+              <td><StatusPill s={r.order.status} /></td>
+              <td className="acts"><SettleCell r={r} onDone={() => setK((x) => x + 1)} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
 export function Portfolio() {
+  const clears = useLive(ofelClears, [], 30000);
+  const last = clears.data?.at(-1);
   return (
-    <div className="page">
-      <div className="page-head">
-        <div>
-          <h1>Portfolio</h1>
-          <p>Your fills at each batch's one price. Settlement is private: the chain shows a transfer, never the amount.</p>
+    <main className="order" id="main">
+      <header className="board-head">
+        <span className="kicker">Portfolio</span>
+        <h1>Your book, readable only by you</h1>
+        <p>Private balances and fills at each batch's one price. The chain shows a transfer, never the amount.</p>
+      </header>
+      <section className="order-sec">
+        <h2>Private balances</h2>
+        <div className="pnl pad">
+          <PrivateBalances lastClear={last} />
         </div>
-      </div>
-      <div className="stack">
-        <Balances />
-        <Orders />
-      </div>
-    </div>
+      </section>
+      <section className="order-sec">
+        <h2>Orders, fills and settlement</h2>
+        <div className="pnl">
+          <div className="tbl-wrap">
+            <MyOrdersTable lastClear={last} />
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

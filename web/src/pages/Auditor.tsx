@@ -7,7 +7,7 @@ import { eercFor } from "../lib/eerc";
 import { useLive } from "../lib/hooks";
 import { units } from "../lib/format";
 import { useWallet } from "../lib/wallet";
-import { Empty, ErrorBox, Hash, Skel } from "../components/ui";
+import { Hash, Icon, Skel, State } from "../components/ui";
 
 interface AuditRow {
   batch: bigint;
@@ -67,7 +67,9 @@ async function legAssets(hashes: Hex[]): Promise<Map<string, string>> {
 
 const cs = (a?: string | null) => (a ? getAddress(a) : undefined);
 
-export function Auditor() {
+/** The compliance view, live: every order opened with the validators' signatures and checked against its commitment,
+ * and every eERC settlement leg decrypted with the auditor key. */
+export function AuditView() {
   const w = useWallet();
   const [go, setGo] = useState(0);
   const audit = useLive(async () => (w.isAgent && go ? auditBatches(await w.agentSecret()) : undefined), [w.isAgent, go], 15000);
@@ -78,83 +80,83 @@ export function Auditor() {
     return rows.map((r) => ({ ...r, asset: assets.get(r.transactionHash) }));
   }, [w.isAgent, go], 15000);
 
+  if (!w.isAgent)
+    return (
+      <State kind="setup" art="lens" title="Auditor key required">
+        Only the auditor wallet (<Hash v={cfg.agent} />) can open sizes and settlement legs, and only after a batch closes. Everyone else sees ciphertext and batch totals.
+      </State>
+    );
+  if (!go)
+    return (
+      <State kind="setup" art="lens" title="Ready to audit" action={<button className="btn btn-primary btn-sm" onClick={() => setGo(1)}>Derive the auditor key and decrypt</button>}>
+        Opens every closed batch with the validators' signatures, then checks each size against its commitment.
+      </State>
+    );
   return (
-    <div className="page">
-      <div className="page-head">
-        <div>
-          <h1>Auditor</h1>
-          <p>The compliance view: every size and every settlement leg, readable only once a batch closes.</p>
-        </div>
-        {w.isAgent && go > 0 && <span className="pill ok">Auditor key active</span>}
-      </div>
-      {!w.isAgent ? (
-        <section className="panel">
-          <Empty art="lens" title="Auditor key required">
-            Connect the auditor wallet ({<Hash v={cfg.agent} />}). Everyone else sees ciphertext and batch totals only.
-          </Empty>
-        </section>
-      ) : !go ? (
-        <section className="panel">
-          <Empty art="lens" title="Ready to audit">
-            <button className="btn primary" style={{ marginTop: 8 }} onClick={() => setGo(1)}>Derive the auditor key and decrypt</button>
-          </Empty>
-        </section>
-      ) : (
-        <div className="stack">
-          <section className="panel">
-            <div className="panel-h"><h3>Every order, opened</h3><span className="muted" style={{ fontSize: 13 }}>Each size checked against its Pedersen commitment</span></div>
-            {audit.error && <div className="panel-b"><ErrorBox>{audit.error}</ErrorBox></div>}
-            {!audit.data && !audit.error && <div className="panel-b stack"><Skel /><Skel /><Skel /></div>}
-            {audit.data && audit.data.rows.length === 0 && <Empty title="Nothing to audit yet">No closed batch has orders.</Empty>}
-            {!!audit.data?.rows.length && (
-              <div className="tbl-wrap">
-                <table className="tbl">
-                  <thead><tr><th>Batch</th><th className="hide-sm">#</th><th>Trader</th><th>Side</th><th className="r">Size</th><th className="r">Limit</th><th className="r">Commitment</th><th className="r hide-sm">Opened with</th></tr></thead>
-                  <tbody>
-                    {audit.data.rows.map((r) => (
-                      <tr key={`${r.batch}-${r.index}`}>
-                        <td>#{r.batch.toString()}</td>
-                        <td className="num hide-sm">{r.index}</td>
-                        <td><Hash v={r.trader} /></td>
-                        <td className={r.side === BUY ? "buy" : "sell"}>{r.side === BUY ? "Buy" : "Sell"}</td>
-                        <td className="r num">{units(r.size)} tAVAX</td>
-                        <td className="r num">{units(r.limit)}</td>
-                        <td className="r">{r.commitmentOk ? <span className="pill ok">matches</span> : <span className="pill bad">mismatch</span>}</td>
-                        <td className="r num muted hide-sm">{r.signers} signatures</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {!!audit.data?.sealedBatches && <div className="panel-b muted" style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>{audit.data.sealedBatches} batch still sealed: the auditor waits for T like everyone else.</div>}
-          </section>
-          <section className="panel">
-            <div className="panel-h"><h3>Settlement legs (eERC)</h3><span className="muted" style={{ fontSize: 13 }}>Decrypted with the eERC auditor key</span></div>
-            {legs.error && <div className="panel-b"><ErrorBox>{legs.error}</ErrorBox></div>}
-            {!legs.data && !legs.error && <div className="panel-b stack"><Skel /><Skel /></div>}
-            {legs.data?.length === 0 && <Empty art="coins" title="No private transfers in the last 1,000 blocks" />}
-            {!!legs.data?.length && (
-              <div className="tbl-wrap">
-                <table className="tbl">
-                  <thead><tr><th className="hide-sm">Type</th><th>From</th><th>To</th><th className="r">Amount</th><th className="hide-sm">Tx</th></tr></thead>
-                  <tbody>
-                    {legs.data.map((l) => (
-                      <tr key={l.transactionHash + l.amount}>
-                        <td className="hide-sm">{l.type}</td>
-                        <td><Hash v={cs(l.sender)} /></td>
-                        <td><Hash v={cs(l.receiver)} /></td>
-                        <td className="r num">{units(BigInt(l.amount))}{l.asset && <span className="dec" style={{ marginLeft: 5 }}>{l.asset}</span>}</td>
-                        <td className="hide-sm"><Hash v={l.transactionHash} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </div>
+    <div className="audit">
+      <div className="sec-h"><b>Every order, opened</b><span className="dim small">each size checked against its Pedersen commitment</span></div>
+      {audit.error && <State kind="error" title="Audit failed">{audit.error}</State>}
+      {!audit.data && !audit.error && <div className="skels"><Skel h={36} /><Skel h={36} /></div>}
+      {audit.data && audit.data.rows.length === 0 && <State kind="empty" title="Nothing to audit yet">No closed batch has orders.</State>}
+      {!!audit.data?.rows.length && (
+        <table className="tbl" data-film="audit-orders">
+          <thead><tr><th>Batch</th><th className="hide-sm">#</th><th>Trader</th><th>Side</th><th>Size <i>tAVAX</i></th><th>Limit</th><th>Commitment</th><th className="hide-sm">Opened with</th></tr></thead>
+          <tbody>
+            {audit.data.rows.map((r) => (
+              <tr key={`${r.batch}-${r.index}`}>
+                <td className="mono">#{r.batch.toString()}</td>
+                <td className="mono hide-sm">{r.index}</td>
+                <td><Hash v={r.trader} /></td>
+                <td><span className={`spill spill-${r.side === BUY ? "up" : "down"}`}><Icon name={r.side === BUY ? "up" : "down"} size={12} />{r.side === BUY ? "Buy" : "Sell"}</span></td>
+                <td className="mono">{units(r.size)}</td>
+                <td className="mono">{units(r.limit)}</td>
+                <td>{r.commitmentOk ? <span className="st st-won"><i />matches</span> : <span className="st st-lost"><i />mismatch</span>}</td>
+                <td className="mono hide-sm dim">{r.signers} signatures</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {!!audit.data?.sealedBatches && <p className="form-note pad-x">{audit.data.sealedBatches} batch still sealed: the auditor waits for the close like everyone else.</p>}
+      <div className="sec-h"><b>Settlement legs (eERC)</b><span className="dim small">decrypted with the eERC auditor key</span></div>
+      {legs.error && <State kind="error" title="Can't decrypt the legs">{legs.error}</State>}
+      {!legs.data && !legs.error && <div className="skels"><Skel h={36} /></div>}
+      {legs.data?.length === 0 && <State kind="empty" title="No private transfers in the last 1,000 blocks" />}
+      {!!legs.data?.length && (
+        <table className="tbl" data-film="audit-legs">
+          <thead><tr><th className="hide-sm">Type</th><th>From</th><th>To</th><th>Amount</th><th className="hide-sm">Tx</th></tr></thead>
+          <tbody>
+            {legs.data.map((l) => (
+              <tr key={l.transactionHash + l.amount}>
+                <td className="hide-sm">{l.type}</td>
+                <td><Hash v={cs(l.sender)} /></td>
+                <td><Hash v={cs(l.receiver)} /></td>
+                <td className="mono">{units(BigInt(l.amount))} <small>{l.asset}</small></td>
+                <td className="hide-sm"><Hash v={l.transactionHash} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
+  );
+}
+
+export function Auditor() {
+  const w = useWallet();
+  return (
+    <main className="order" id="main">
+      <header className="board-head">
+        <span className="kicker">Auditor</span>
+        <h1>Every size and every leg, after the close</h1>
+        <p>The compliance view. One key reads what the public never sees, and even it waits for the batch to close.</p>
+        {w.isAgent && <span className="st st-won"><i />Auditor wallet connected</span>}
+      </header>
+      <section className="pnl" data-film="auditor">
+        <div className="tbl-wrap">
+          <AuditView />
+        </div>
+      </section>
+    </main>
   );
 }
