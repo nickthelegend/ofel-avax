@@ -8,7 +8,7 @@ them is mocked.
 |---|---|---|---|---|
 | Contracts (Foundry) | `cd contracts && forge test` | 35 tests: OfelBook 31 (two fuzz suites with 256 runs each), OfelFaucet 4 | 35/35 pass | No: EVM unit tests (see the note below) |
 | warplock unit | `pnpm --filter warplock test` | 10 | 10/10 pass | No: real BLS12-381 keys generated locally |
-| @ofel/core unit | `pnpm --filter @ofel/core test` | 7 | 7/7 pass | No |
+| @ofel/core unit | `pnpm --filter @ofel/core test` | 8 (incl. the house ladder blind check, Nov 13) | 8/8 pass | No |
 | Live end-to-end, **Fuji** | `cd scripts && OFEL_E2E_AGENT_LOGS="ssh … docker logs -f --since 1s ofel-l1-agent-1" node --env-file=../.env.fuji e2e.ts` | 31 live checks | 31/31 pass (docs/fuji-e2e-output.txt) | **Yes: the Fuji L1, the Fuji P-Chain, the 3 VPS validators, eERC and the hosted agent** |
 | Live end-to-end, local | `pnpm test:live` (scripts/e2e.ts) | 31 live checks | 31/31 pass | Yes, the local L1 |
 | Hosted judge path | browser, https://ofel-desk.vercel.app, fresh Test wallet | faucet → register → deposit → seal → clear → pay-in → settle → bond | done, tx hashes in `deployments/fuji-l1.json` `hostedJudgeRun` | Yes, Fuji L1 |
