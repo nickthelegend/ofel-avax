@@ -1,0 +1,32 @@
+{
+  "name": "@ofel/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5361 --strictPort",
+    "build": "tsc -p . && vite build",
+    "build:qa": "tsc -p . && VITE_QA=1 vite build --outDir dist-qa",
+    "preview": "vite preview --host 127.0.0.1 --port 5361 --strictPort",
+    "preview:qa": "vite preview --host 127.0.0.1 --port 5362 --strictPort --outDir dist-qa"
+  },
+  "dependencies": {
+    "@avalabs/eerc-sdk": "1.0.2",
+    "@ofel/core": "workspace:*",
+    "@tanstack/react-query": "5.105.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "viem": "2.57.13",
+    "wagmi": "2.19.5",
+    "warplock": "workspace:*",
+    "buffer": "6.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.8"
+  }
+}
