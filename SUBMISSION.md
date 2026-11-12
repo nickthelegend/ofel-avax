@@ -27,7 +27,8 @@ We built the timelock as **warplock**, an open-source TypeScript SDK that turns 
 timelock. Exam papers, sealed tenders and results embargoes could all use it.
 
 ## How it uses Avalanche
-- **Its own L1:** a Subnet-EVM L1 with PoA validators. The app reads the validator set and BLS keys from the P-Chain. The
+- **Its own L1, on Fuji:** a Subnet-EVM L1 created and converted with ConvertSubnetToL1, with three PoA validators we
+  run and fund on the P-Chain (IncreaseL1ValidatorBalanceTx). The app reads the validator set and BLS keys from the P-Chain. The
   consensus parameters (`k=3, α=2`) were tuned so one validator can be offline.
 - **Avalanche Warp:** the core mechanism. The validators' BLS signatures on a Warp message are the IBE keys. We encode
   the message byte-for-byte to match avalanchego, so its message ID matches the precompile's.
@@ -37,20 +38,26 @@ timelock. Exam papers, sealed tenders and results embargoes could all use it.
 
 ## Tech stack
 Solidity 0.8.27 with Foundry; Ava Labs EncryptedERC (vendored, prod verifiers); TypeScript; @noble/curves (BLS12-381,
-BN254, x25519); viem; @avalabs/eerc-sdk with snarkjs; React and Vite; Avalanche-CLI and avalanchego v1.14.0 for the
-local L1; Playwright for QA.
+BN254, x25519); viem; @avalabs/eerc-sdk with snarkjs; React and Vite; Avalanche-CLI, avalanchejs and avalanchego v1.15.3 for the
+Fuji L1; Playwright for QA.
 
 ## Live links
-- **Network:** a local Avalanche network with the Ofel L1. Addresses and every recorded tx hash are in
-  `deployments/local.json`, and the README has the table. There are **no Snowtrace links yet.** The three Fuji validators run on the
-  hackathon VPS with the Fuji P-Chain synced (NodeIDs and BLS keys in `deployments/fuji.json`), and the L1 is waiting
-  on about 1.25 Fuji AVAX for the deployer's P-Chain address (`scripts/deploy-l1-fuji.md`). The demo runs live against
-  the local L1 until then.
+- **Desk (hosted):** https://ofel-desk.vercel.app. Connect → **Test wallet** → **Get test funds** (one tap: OFEL gas,
+  tAVAX and tUSDC from the Ofel faucet contract on the L1, then eERC registration and deposits) → seal an order. No
+  Fuji AVAX and no browser extension needed. A house wallet quotes blind into any batch you trade in.
+- **The Ofel L1 on Fuji:** [Avalanche Explorer](https://subnets-test.avax.network/subnets/soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt),
+  [ConvertSubnetToL1Tx](https://subnets-test.avax.network/p-chain/tx/9E9JwtLhCSSRGkfD5VwWhJuuAJxDUvhBQeQemf7HTdRbFPSw3).
+  Three PoA validators we run, RPC with the warp API at
+  `https://ofel-v1.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc`.
+  Contract addresses and every recorded tx hash: README "Live deployment (Fuji)" and `deployments/fuji-l1.json`.
+  No hosted explorer indexes the L1's own EVM txs; check them with `cast receipt` on that RPC, or on the desk's
+  Batches pages.
 - **Repo:** (to be pushed by Nick).
 - **Demo video:** (to be recorded live).
 
 ## Tests
-31 Foundry tests, 17 unit tests and 31 live end-to-end checks, including stopping a validator. All pass. See TESTING.md.
+35 Foundry tests, 17 unit tests and 31 live end-to-end checks on the Fuji L1, including stopping a validator; plus the
+hosted judge path run from the Vercel desk with a fresh wallet. All pass. See TESTING.md.
 
 ## AI tools used
 Claude Code (all code, contracts and docs); ChatGPT image generation (the 3D object set). No Codex was used for this

@@ -1,24 +1,24 @@
 # Deploying the Ofel L1 to Fuji
 
-## Status (2026-11-12, Option B chosen)
+## Status (2026-11-12 ~15:00 UTC): LIVE
 
-- **Done:** three avalanchego v1.15.3 validators run on the hackathon VPS (`deploy/vps/docker-compose.yml`, server folder
-  `/opt/hk/ofel-l1`), each with `--partial-sync-primary-network`, the Subnet-EVM v1.15.3 plugin (rpcchainvm 47) under the
-  VM ID `r4ZfHVjHDXTmiMFdhw82j1E2vE4DUeyM35nrAvRdXABoZjEqq`, and HTTPS through Traefik at
-  `https://ofel-v{1,2,3}.201-18-198-162.sslip.io` (only `/ext/info`, `/ext/health` and the L1 `rpc`/`ws` are routed;
-  9650 is never published). The Fuji P-Chain is bootstrapped on all three (v1 synced from the network in ~15 minutes,
-  v2 and v3 started from a copy of its database). NodeIDs and BLS keys are in `deployments/fuji.json`. The avalanche-cli
-  blockchain `ofelfuji` exists (chain ID 77077, OFEL, Warp on, PoA owner and proxy admin `0x5Cc9…148f`, the CLI key
-  `ofelfuji`), and the genesis is `deployments/fuji-l1-genesis.json`. The agent image is built on the VPS.
-- **Blocked:** about **1.25 Fuji AVAX** (minimum 0.9) on `P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt` (the same key
-  is `0x5Cc9CBB73d65Eb832342E788929294CD8237148f` on the C-Chain). The L1 validator fee on Fuji is 512 nAVAX per second per
-  validator (0.044 AVAX a day), so 0.4 AVAX per validator lasts about 9 days, through judging. CreateSubnet itself needs only
-  ~2,200 nAVAX.
-- **avalanche-cli 1.9.7 vs Fuji:** the CLI calls `platform.getBalance` before every deploy, and the public Fuji API
-  (avalanchego 1.15.3) answers "method not available". Our own node still serves it, so `deploy/vps/fuji-api-shim.mjs`
-  sends only that call to v1 over an SSH tunnel and everything else, including every transaction, to the public API.
+The L1 exists on Fuji: subnet `soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt`, blockchain
+`29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd`, converted with the three VPS validators (PoA, validator manager
+initialised). P-Chain txs, balances and run-out dates: `deployments/fuji.json`; contracts: `deployments/fuji-l1.json`.
 
-### Commands once funded
+What actually worked (avalanche-cli 1.9.6), for a re-run:
+- `blockchain deploy … --convert-only` created the subnet and chain, then stopped at an interactive prompt ("deploy
+  the Validator Manager into an external blockchain?"). The conversion was finished with `avalanche blockchain convert
+  ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji --bootstrap-endpoints … --balance 0.1664 --weight 100
+  --change-owner-address P-fuji1aw70… --convert-only --proof-of-authority --validator-manager-owner 0x5Cc9…148f
+  --validator-manager-blockchain-id <blockchainID> --validator-manager-address 0x0Feedc0de0000000000000000000000000000000
+  --verify-input=false`, after adding the Fuji subnet/blockchain IDs to the CLI sidecar.
+- `contract initValidatorManager` needs `--rpc` pointing at a node that serves `/ext/bc/P` too (the SSH tunnel to v1,
+  `http://127.0.0.1:19650/ext/bc/<id>/rpc`); Traefik only routes the L1 rpc/ws.
+- `key transfer` (C→P) issues the export but then fails on `avax.getAtomicTxStatus`, which the public API no longer
+  serves. `scripts/topup-validators.sh` does export, import and IncreaseL1ValidatorBalanceTx with avalanchejs instead.
+
+### Commands used (history)
 
 ```bash
 IP=$(ssh -i ~/.ssh/hackathon_vps root@201.18.198.162 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" ofel-l1-v1-1')

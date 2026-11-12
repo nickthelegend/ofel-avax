@@ -4,13 +4,15 @@
 // node --env-file=../../.env.fuji: the roles then sign through the desk's "Test wallet" slot, which this script fills
 // in the headless browser's storage from OFEL_ALICE_PK / OFEL_BOB_PK / OFEL_AGENT_PK (never written to disk).
 import { mkdirSync, writeFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { chromium } from "playwright-core";
 import { withChromeLock } from "/Volumes/Extreme SSD/Projects/grokbot/orchestration/chrome-lock.mjs";
 
 const BASE = process.env.OFEL_QA_URL ?? "http://localhost:5362";
 const OUT = process.env.OFEL_QA_OUT ?? "/Volumes/Extreme SSD/Projects/grokbot/orchestration/shots/avax-ofel";
 const NET = process.env.OFEL_QA_NET; // set for a hosted build: roles go through the Test wallet slot
-const roleKey = { alice: process.env.OFEL_ALICE_PK, bob: process.env.OFEL_BOB_PK, agent: process.env.OFEL_AGENT_PK };
+// "fresh" is a brand-new empty wallet (random key, never funded): it shows the one-tap setup a judge sees first.
+const roleKey = { alice: process.env.OFEL_ALICE_PK, bob: process.env.OFEL_BOB_PK, agent: process.env.OFEL_AGENT_PK, fresh: "0x" + randomBytes(32).toString("hex") };
 mkdirSync(OUT, { recursive: true });
 const batch = process.env.OFEL_QA_BATCH ?? "50";
 const ROUTES = [
@@ -22,7 +24,8 @@ const ROUTES = [
   { name: "auditor", path: "/auditor", as: "agent", click: ["Derive the auditor key and decrypt"] },
   { name: "auditor-locked", path: "/auditor", as: "bob" },
   { name: "validators", path: "/validators" },
-];
+  ...(process.env.OFEL_QA_NET ? [{ name: "desk-new-wallet", path: "/desk", as: "fresh" }] : []),
+].filter((r) => !process.env.OFEL_QA_ONLY || process.env.OFEL_QA_ONLY.split(",").includes(r.name));
 const report = [];
 await withChromeLock(async () => {
   const browser = await chromium.launch({ channel: "chrome", headless: true });

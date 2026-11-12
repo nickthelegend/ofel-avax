@@ -7,12 +7,12 @@ don't want to be front-run or watched. It runs on its own Avalanche L1. The batc
 not by an operator, and balances and fills live in Ava Labs' encrypted ERC (eERC), which has an auditor key for
 compliance.
 
-> Status: everything below runs live on a **local** Avalanche network (avalanchego v1.14.0, one Subnet-EVM L1 with three
-> PoA validators). **Fuji, in progress:** the three Ofel validators now run on the hackathon VPS (avalanchego v1.15.3,
-> Subnet-EVM v1.15.3, Fuji P-Chain synced, HTTPS at `ofel-v{1,2,3}.201-18-198-162.sslip.io`). The L1 itself is not
-> created yet: CreateSubnet, CreateChain and ConvertSubnetToL1 need about 1.25 Fuji AVAX on the deployer's P-Chain
-> address, which is not funded. Until then there are no Snowtrace links. See [deployments/fuji.json](deployments/fuji.json)
-> and [scripts/deploy-l1-fuji.md](scripts/deploy-l1-fuji.md).
+> **Live on Fuji.** The Ofel L1 is a real Fuji L1 (subnet
+> [`soDva7N7…`](https://subnets-test.avax.network/subnets/soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt),
+> chain ID 77077, token OFEL) with three PoA validators on our VPS, and the desk is at
+> **https://ofel-desk.vercel.app**. A judge with an empty wallet picks **Connect → Test wallet**, taps **Get test funds**
+> (OFEL gas and test assets from the Ofel faucet contract on the L1, so no Fuji AVAX is needed), and can seal an order
+> right away. A house wallet quotes blind into any batch you trade in, so your order has a counterparty.
 
 ## How it works
 
@@ -68,10 +68,57 @@ compliance.
 | `packages/warplock` | **warplock**, a reusable open-source TypeScript SDK that turns any Avalanche L1's validator set into a timelock. It has byte-exact Warp `UnsignedMessage`/`AddressedCall` encoding, CB58, IBE keyed by Avalanche BLS keys, Shamir over Fr, AES-GCM envelopes, and P-Chain and warp RPC readers. |
 | `packages/ofel` | `@ofel/core`: order sealing, Pedersen commitments (matching `Pedersen.sol`), agent and self blobs, the clearing mirror and the ABIs. |
 | `contracts/` | Foundry: `OfelBook.sol`, `Pedersen.sol`, test assets, and Ava Labs eERC vendored at upstream `8dc98cd` with its prod verifiers (Ecosystem License kept in `src/vendor/eerc/LICENSE.md`). |
-| `scripts/` | `agent.ts` (clearing agent and auditor), `trader.ts` (CLI), `e2e.ts` (live suite), `spike.ts` (go/no-go), `eerc-setup.ts`, `topup.ts`, `validator.sh` (stop or start one validator), `qa/shots.mjs`. |
+| `scripts/` | `agent.ts` (clearing agent and auditor, plus the faucet relay API), `house.ts` (blind house quotes), `trader.ts` (CLI), `e2e.ts` (live suite), `spike.ts` (go/no-go), `eerc-setup.ts`, `topup.ts`, `topup-validators.sh` (P-Chain balances), `validator.sh` (stop or start one validator, local or Fuji), `qa/shots.mjs`. |
 | `web/` | The desk, built with Vite and React: landing, Desk, Batches, Portfolio, Auditor, Validators. |
-| `deployments/` | `local.json` (live addresses plus the recorded e2e and web-run tx hashes), the L1 chain and subnet configs, the Fuji genesis, and `fuji.json` (validators running, L1 not created yet). |
-| `deploy/vps/` | Docker compose for the three Fuji validators and the clearing agent on the VPS, and the avalanche-cli API shim. |
+| `deployments/` | `fuji-l1.json` (Fuji L1 contract addresses, the e2e and hosted-run tx hashes), `fuji.json` (P-Chain txs, validators, balances and run-out dates), `local.json` (the local network), the L1 chain and subnet configs and the Fuji genesis. |
+| `deploy/vps/` | Docker compose for the three Fuji validators, the clearing agent (with the faucet API) and the house on the VPS, and the avalanche-cli API shim. |
+
+## Live deployment (Fuji)
+
+| | |
+|---|---|
+| Desk | **https://ofel-desk.vercel.app** (production build, no keys in it; the Test wallet key is made in your browser) |
+| L1 | subnet `soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt`, blockchain `29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd`, Subnet-EVM v1.15.3, chain ID 77077, OFEL, Warp on, `k=3 α=2` |
+| L1 RPC (warp API on) | `https://ofel-v{1,2,3}.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc` |
+| Agent API | `https://ofel-api.201-18-198-162.sslip.io/api/health`, `POST /api/faucet` |
+| Validator manager | PoA, proxy `0x0Feedc0de0000000000000000000000000000000`, owner `0x5Cc9…148f` |
+
+| P-Chain tx (Avalanche Explorer) | |
+|---|---|
+| CreateSubnetTx | [soDva7N7…](https://subnets-test.avax.network/p-chain/tx/soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt) |
+| CreateChainTx | [29iRKcsU…](https://subnets-test.avax.network/p-chain/tx/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd) |
+| ConvertSubnetToL1Tx (3 validators) | [9E9JwtLh…](https://subnets-test.avax.network/p-chain/tx/9E9JwtLhCSSRGkfD5VwWhJuuAJxDUvhBQeQemf7HTdRbFPSw3) |
+| Top-ups (ImportTx + 3× IncreaseL1ValidatorBalanceTx, twice) | listed in [deployments/fuji.json](deployments/fuji.json) `topups` |
+| Hub → deployer on the C-Chain (Snowtrace) | [0xc65d950a…](https://testnet.snowtrace.io/tx/0xc65d950a1114ea7ed7f3212456b2cce5dc4af7b721b92e0e06c6362b0730c8b0), [0xb707a2db…](https://testnet.snowtrace.io/tx/0xb707a2db9c17d2409ee11c21c116af7fdcd5920d3c249c151b1e7b7b3ba86229) |
+
+| Contract on the L1 | Address |
+|---|---|
+| OfelBook | `0x40Fb0a21A8736d3cE05008D33888FE207975D5aB` |
+| EncryptedERC (Ava Labs, unmodified, converter, 2 decimals) | `0xaE10f3005c359cf6C68eaE6a245DcC4CF100DA21` |
+| Registrar (eERC) | `0x3f6085124eC68Ea1BAD105b61c046d68F59B087F` |
+| OfelFaucet (5 OFEL + 2,000 tAVAX + 50,000 tUSDC once per wallet, stocked for 200) | `0x9aF7eCC1dfD160556b7542A0eA4b37adeC0E0dDC` |
+| tAVAX / tUSDC (test assets) | `0xc79eb2e7e25d053968d871f65f4bB5bD1Ddf7476` / `0xbAB44432a831383387eE19AaE227ae937CB020E7` |
+| Clearing agent + auditor / house | `0x37727D010AEd8BFACD98A5D4D4C635cB20eDB4e8` / `0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81` |
+
+**Validator runway.** Each Fuji L1 validator pays 512 nAVAX per second (0.0442 AVAX a day) from its P-Chain balance.
+Nick's 0.5 AVAX created the L1 (0.1664 each, fees 0.0002 AVAX), and two hub transfers (0.7 + 0.6) were exported to the
+P-Chain and added evenly. Each validator now holds **0.5919 AVAX**, which lasts until about **2026-11-26 00:06 UTC**
+for all three (`NodeID-4ofVdRcs…`, `NodeID-L4dJuAW1…`, `NodeID-9by3D2T4…`). The desk's Validators page shows the live
+balance and date. To add more: `scripts/topup-validators.sh 0.3 "Ofel validators"` (requests AVAX from the funding hub,
+exports C→P, imports, and spreads it with IncreaseL1ValidatorBalanceTx).
+
+**Explorers.** P-Chain txs and the L1 itself are on the Avalanche Explorer (links above); hub transfers are on Snowtrace.
+No hosted explorer indexes this L1's own EVM transactions (the Avalanche Explorer lists the L1 but not its blocks), so
+every L1 tx hash in this README and in `deployments/fuji-l1.json` is checked with
+`cast receipt <hash> --rpc-url https://ofel-v1.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc`,
+and the desk's Batches page shows every order's raw transaction input.
+
+**Recorded on Fuji** (`deployments/fuji-l1.json`):
+- `e2e`: batches 2 and 3, 31/31 live checks against the hosted agent (transcript in `docs/fuji-e2e-output.txt`). Batch 3
+  opened with 2/3 signatures while `ofel-l1-v3-1` was stopped.
+- `hostedJudgeRun`: batch 6 from https://ofel-desk.vercel.app with a fresh Test wallet: faucet, eERC registration,
+  deposits, a sealed buy of 1,250 tAVAX at ≤ 31.50, the house's blind quote, a clear at 31.45 with 3/3 signatures,
+  1,000 filled, a private pay-in, the agent's payout, settled, bond back.
 
 ## Live deployment (local network)
 
@@ -121,9 +168,10 @@ pnpm test && pnpm test:live                       # Foundry + unit, then the liv
 
 ## Bonus features, honestly
 
-- **Own L1:** yes. A Subnet-EVM L1 with PoA validators, local for now; on Fuji the three validators run and the L1 waits for test AVAX.
+- **Own L1:** yes, on Fuji. A Subnet-EVM L1 converted with ConvertSubnetToL1 and three PoA validators that we run,
+  with the validator manager initialised and the validators' P-Chain balances funded through Nov 26.
 - **Avalanche Warp / ICM:** Warp is the core mechanism. The validator BLS signatures on a Warp message are the decryption
-  key. There is no Teleporter or ICTT bridge from the C-Chain: a local L1 can't reach Fuji, so that part is not claimed.
+  key. There is no Teleporter or ICTT bridge from the C-Chain (no ICM relayer runs), so that part is not claimed.
 - **eERC:** yes, used for real. It holds the private balances and the settlement legs, the auditor decrypts every leg,
   and proofs are generated in the browser.
 - **Open-source reusable work:** yes, `warplock`.
