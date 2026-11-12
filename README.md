@@ -90,6 +90,17 @@ transaction input of every order, which is exactly what an explorer would show. 
 - `e2e`: batches 3 and 5, with 31 live checks. Batch 5 was opened with validator `NodeID-MNFf…` stopped.
 - `webRun`: batch 50, sealed and settled from the web desk.
 
+## Restart the existing local L1 (this machine)
+
+```bash
+avalanche network start --snapshot-name ofel --avalanchego-version v1.14.0   # primary network (2 nodes)
+avalanche node local start ofel-local-node-local-network                    # the 3 L1 validators
+scripts/validator.sh status                                                  # start any that report "down"
+pnpm agent                                                                   # clearing agent
+```
+The primary network's run data lives on the SSD (`~/.avalanche-cli/runs` is a symlink there), and the L1 nodes' data
+lives in `grokbot/avax/.ofel-avahome/`.
+
 ## Run it
 
 ```bash
