@@ -185,7 +185,7 @@ export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batc
         )}
         {err && <p className="sheet-err" role="alert">{err}</p>}
         {done && <OrderStatus done={done} onClear={() => setDone(undefined)} />}
-        <p className="form-note">Your size and limit are encrypted here before they leave the browser. At the close only side and limit open; size stays a commitment.</p>
+        <p className="form-note">Your size and limit are encrypted here before they leave the browser. At the close only side and limit open. Totals are public, single sizes aren't.</p>
       </div>
       <details className="vault-box">
         <summary className="vb-head">

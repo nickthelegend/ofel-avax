@@ -155,9 +155,11 @@ function Detail({ id }: { id: bigint }) {
           <p className="verdict-note">
             {x.state === 3
               ? x.price > 0n
-                ? `${units(matched)} tAVAX crossed at one price. Totals are proven on chain: Σ commitments = total·G + blind·H. No single size is ever shown.`
+                ? `${units(matched)} tAVAX crossed at one price. Totals are public, single sizes aren't: Σ commitments = total·G + blind·H.`
                 : "Buyers' and sellers' limits did not cross; every bond comes back."
-              : "Nobody can read these orders yet, not even the auditor."}
+              : x.state === 2
+                ? "Validators signed the close: sides and limits are opening. Sizes stay sealed."
+                : "Nobody can read these orders yet, not even the auditor."}
           </p>
         </section>
       </div>
