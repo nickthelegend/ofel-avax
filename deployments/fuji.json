@@ -1,7 +1,6 @@
 {
   "network": "fuji",
-  "status": "VALIDATORS RUNNING, L1 NOT CREATED: waiting for Fuji AVAX on the deployer's P-Chain address",
-  "blockedOn": "About 1.25 Fuji AVAX (minimum 0.9) on P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt. Every Ofel/Xorv/Kumi/Juno/Noren test key together holds about 0.5 AVAX on the C-Chain and each project needs its own gas, so none were drained.",
+  "status": "LIVE: Ofel L1 created and converted on Fuji (3 PoA validators on the VPS, k=3 alpha=2), contracts deployed",
   "deployer": {
     "cli_key": "ofelfuji (avalanche-cli key store; also OFEL_DEPLOYER_PK in the gitignored .env.fuji)",
     "pChain": "P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt",
@@ -11,9 +10,8 @@
   "cost": {
     "validatorFeeNavaxPerSecond": 512,
     "perValidatorPerDayAvax": 0.0442,
-    "plannedBalancePerValidatorAvax": 0.4,
-    "lastsDays": 9,
-    "txFeesAvax": "under 0.01"
+    "txFeesAvax": "0.000215 (CreateSubnet + CreateChain + ConvertSubnetToL1)",
+    "topUp": "scripts/topup-validators.sh [AVAX-from-hub] [\"why\"]"
   },
   "l1": {
     "name": "ofelfuji",
@@ -24,9 +22,16 @@
     "genesis": "deployments/fuji-l1-genesis.json",
     "chainConfig": "deployments/l1-chain-config.fuji.json",
     "subnetConfig": "deployments/l1-subnet-config.json (k=3, alpha=2)",
-    "validatorManager": "Proof of Authority",
-    "subnetID": null,
-    "blockchainID": null
+    "validatorManager": "Proof of Authority (ValidatorManager proxy 0x0Feedc0de0000000000000000000000000000000, owner 0x5Cc9CBB73d65Eb832342E788929294CD8237148f)",
+    "subnetID": "soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt",
+    "blockchainID": "29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd",
+    "validatorManagerTxs": {
+      "initialize": "0xa96067f51613db97f80c4b118087de78aa7804b468481e7e1bbd12dba10f43ba",
+      "initializeValidatorSet": "0xe8d2dee4e156b2ecaf799d7d62163c7817fb81d86ac86f2ea723034700d8b0b4"
+    },
+    "rpc": "https://ofel-v{1,2,3}.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc (warp API on)",
+    "contracts": "deployments/fuji-l1.json",
+    "createdAt": "2026-11-12T14:55Z"
   },
   "validators": [
     {
@@ -34,30 +39,138 @@
       "nodeID": "NodeID-4ofVdRcs3EMcTaBSFWGvJJeemkCYEwA2V",
       "blsPublicKey": "0x8e68ee8dc1b1b762c1bd3e267e95f5cd45c83dedbfb2b548ab3e772a504749bfbcbd0c4e4fee7fa108895dedb02142ab",
       "uri": "https://ofel-v1.201-18-198-162.sslip.io",
-      "staking": "201.18.198.162:9651"
+      "staking": "201.18.198.162:9651",
+      "validationID": "2Ktd47KRk5kYhHxHKuAUK7urupwzCTw9t48JbgaDPM1sppMGkD"
     },
     {
       "name": "v2",
       "nodeID": "NodeID-L4dJuAW1WS3rssb6yDmViWYHZ1FdGYGxs",
       "uri": "https://ofel-v2.201-18-198-162.sslip.io",
       "staking": "201.18.198.162:9653",
-      "blsPublicKey": "0x8bf78ae4d33899f9106d0e94429b043cd207ad8dde29dad112dfd899cf7bf7f8a689f82cc7834ed295345a46f76bd028"
+      "blsPublicKey": "0x8bf78ae4d33899f9106d0e94429b043cd207ad8dde29dad112dfd899cf7bf7f8a689f82cc7834ed295345a46f76bd028",
+      "validationID": "2UE4tJvT1WQucW1XaSU6WL9cdKPVqoMmJdDGa3z7R1LBFMv1r6"
     },
     {
       "name": "v3",
       "nodeID": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
       "uri": "https://ofel-v3.201-18-198-162.sslip.io",
       "staking": "201.18.198.162:9655",
-      "blsPublicKey": "0x988f643c9805b5216294ad8ada6ebab618fca712f13e3ce2de94823e87839d59b232fe2565cbe1c4039857b98747b78a"
+      "blsPublicKey": "0x988f643c9805b5216294ad8ada6ebab618fca712f13e3ce2de94823e87839d59b232fe2565cbe1c4039857b98747b78a",
+      "validationID": "2qwqFW832DkuxDGcsUL7ffHWMMSnftxJMh2Tv8j8bZddKxFR3m"
     }
   ],
   "hosting": "avalanchego v1.15.3 in Docker on the hackathon VPS, --partial-sync-primary-network, Fuji P-Chain bootstrapped 2026-11-12; see deploy/vps/ and grokbot/HOSTING.md",
-  "cChainContracts": "none: Ofel's seal needs its own L1 validator set",
+  "cChainContracts": "none: Ofel lives on its own L1 (the seal is its validator set)",
   "nextSteps": [
-    "ssh tunnel to ofel-l1-v1-1:9650 on 127.0.0.1:19650 and run node deploy/vps/fuji-api-shim.mjs (127.0.0.1:19651)",
-    "avalanche blockchain deploy ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji --same-control-key --bootstrap-endpoints https://ofel-v1.201-18-198-162.sslip.io,https://ofel-v2.201-18-198-162.sslip.io,https://ofel-v3.201-18-198-162.sslip.io --balance 0.4 --weight 100 --change-owner-address P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt --convert-only",
-    "VPS: configs/chains/<blockchainID>/config.json + configs/subnets/<subnetID>.json, OFEL_SUBNET_ID/OFEL_CHAIN_ID in /opt/hk/ofel-l1/.env, docker compose up -d",
-    "avalanche contract initValidatorManager ofelfuji --fuji --endpoint http://127.0.0.1:19651 --key ofelfuji --rpc https://ofel-v1.201-18-198-162.sslip.io/ext/bc/<blockchainID>/rpc",
-    "forge script Deploy.s.sol with OFEL_OUT=../deployments/fuji-l1.json, eerc-setup.ts, agent on the VPS (compose profile agent), e2e.ts, web desk with VITE_OFEL_NETWORK=fuji-l1 to Vercel"
+    "Top up before the balances run out (see validatorBalances.runsOutUtc): scripts/topup-validators.sh 0.3 \"Ofel validators\""
+  ],
+  "validatorBalances": [
+    {
+      "nodeID": "NodeID-4ofVdRcs3EMcTaBSFWGvJJeemkCYEwA2V",
+      "validationID": "2Ktd47KRk5kYhHxHKuAUK7urupwzCTw9t48JbgaDPM1sppMGkD",
+      "balanceAvax": "0.395801",
+      "runsOutUtc": "2026-11-21T13:44:01.489Z",
+      "measuredAt": "2026-11-12T14:59:53.489Z"
+    },
+    {
+      "nodeID": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
+      "validationID": "2qwqFW832DkuxDGcsUL7ffHWMMSnftxJMh2Tv8j8bZddKxFR3m",
+      "balanceAvax": "0.395801",
+      "runsOutUtc": "2026-11-21T13:44:01.489Z",
+      "measuredAt": "2026-11-12T14:59:53.489Z"
+    },
+    {
+      "nodeID": "NodeID-L4dJuAW1WS3rssb6yDmViWYHZ1FdGYGxs",
+      "validationID": "2UE4tJvT1WQucW1XaSU6WL9cdKPVqoMmJdDGa3z7R1LBFMv1r6",
+      "balanceAvax": "0.395801",
+      "runsOutUtc": "2026-11-21T13:44:01.489Z",
+      "measuredAt": "2026-11-12T14:59:53.489Z"
+    }
+  ],
+  "topups": [
+    {
+      "at": "2026-11-12T14:59:10.638Z",
+      "txs": [
+        {
+          "kind": "ExportTx C->P",
+          "txID": "33f2NFCLBzh9kPMhN9K7jbo7YMiCBiUustT16A25R8cMST6yR",
+          "amountAvax": "0.690000",
+          "chain": "C"
+        },
+        {
+          "kind": "ImportTx C->P",
+          "txID": "nB3hATH8Gwrc4EPHPjHu8QQoLuzB5ZGuoxbgFg6NoHoXtj5vy",
+          "url": "https://subnets-test.avax.network/p-chain/tx/nB3hATH8Gwrc4EPHPjHu8QQoLuzB5ZGuoxbgFg6NoHoXtj5vy"
+        },
+        {
+          "kind": "IncreaseL1ValidatorBalanceTx",
+          "nodeID": "NodeID-4ofVdRcs3EMcTaBSFWGvJJeemkCYEwA2V",
+          "validationID": "2Ktd47KRk5kYhHxHKuAUK7urupwzCTw9t48JbgaDPM1sppMGkD",
+          "txID": "2Co6Ltz9TkkgPscgqkQTALezbdxHnijwLECAYTsDGU7YLHEbyE",
+          "amountAvax": "0.229527",
+          "url": "https://subnets-test.avax.network/p-chain/tx/2Co6Ltz9TkkgPscgqkQTALezbdxHnijwLECAYTsDGU7YLHEbyE"
+        },
+        {
+          "kind": "IncreaseL1ValidatorBalanceTx",
+          "nodeID": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
+          "validationID": "2qwqFW832DkuxDGcsUL7ffHWMMSnftxJMh2Tv8j8bZddKxFR3m",
+          "txID": "2JZUvRkRdf9xX1KrdQE65CPabu44RQbKw4PQkLmiWtVsvmxian",
+          "amountAvax": "0.229527",
+          "url": "https://subnets-test.avax.network/p-chain/tx/2JZUvRkRdf9xX1KrdQE65CPabu44RQbKw4PQkLmiWtVsvmxian"
+        },
+        {
+          "kind": "IncreaseL1ValidatorBalanceTx",
+          "nodeID": "NodeID-L4dJuAW1WS3rssb6yDmViWYHZ1FdGYGxs",
+          "validationID": "2UE4tJvT1WQucW1XaSU6WL9cdKPVqoMmJdDGa3z7R1LBFMv1r6",
+          "txID": "93GA9cYcFueTymRCTu8e7mGW5JmtDsPHPFEKxGSVtfNRMXNPS",
+          "amountAvax": "0.229527",
+          "url": "https://subnets-test.avax.network/p-chain/tx/93GA9cYcFueTymRCTu8e7mGW5JmtDsPHPFEKxGSVtfNRMXNPS"
+        }
+      ]
+    }
+  ],
+  "explorers": {
+    "pChainTx": "https://subnets-test.avax.network/p-chain/tx/<txID>",
+    "l1Subnet": "https://subnets-test.avax.network/subnets/soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt",
+    "cChainTx": "https://testnet.snowtrace.io/tx/<hash>",
+    "l1": "No hosted explorer indexes this L1 (Avalanche Explorer/Glacier list it as an L1 but not its EVM txs). Verify L1 txs with eth_getTransactionReceipt on https://ofel-v1.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc or the desk's Batches pages."
+  },
+  "pChainTxs": [
+    {
+      "kind": "CreateSubnetTx",
+      "txID": "soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt",
+      "feeAvax": "0.000010278",
+      "url": "https://subnets-test.avax.network/p-chain/tx/soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt"
+    },
+    {
+      "kind": "CreateChainTx",
+      "txID": "29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd",
+      "feeAvax": "0.000134334",
+      "url": "https://subnets-test.avax.network/p-chain/tx/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd"
+    },
+    {
+      "kind": "ConvertSubnetToL1Tx",
+      "txID": "9E9JwtLhCSSRGkfD5VwWhJuuAJxDUvhBQeQemf7HTdRbFPSw3",
+      "feeAvax": "0.000070672",
+      "initialBalancePerValidatorAvax": "0.1664",
+      "url": "https://subnets-test.avax.network/p-chain/tx/9E9JwtLhCSSRGkfD5VwWhJuuAJxDUvhBQeQemf7HTdRbFPSw3"
+    }
+  ],
+  "funding": [
+    {
+      "at": "2026-11-12",
+      "from": "Nick (direct)",
+      "to": "P-fuji1aw70tg0tgqu7j3eyvxzfjmm0h5ngnxn3ed85nt",
+      "avax": "0.5",
+      "txID": "RT5nzGH2PWxDkW4AmJmYrr1pwMcEFRLSdZbKrELNNrKbTVEKE"
+    },
+    {
+      "at": "2026-11-12",
+      "from": "funding hub 0x25caFd8dA001EEAC9b80931cA3079e08c44124Ed",
+      "to": "0x5Cc9CBB73d65Eb832342E788929294CD8237148f (C-Chain)",
+      "avax": "0.7",
+      "tx": "0xc65d950a1114ea7ed7f3212456b2cce5dc4af7b721b92e0e06c6362b0730c8b0",
+      "url": "https://testnet.snowtrace.io/tx/0xc65d950a1114ea7ed7f3212456b2cce5dc4af7b721b92e0e06c6362b0730c8b0"
+    }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "agent": "0x37727D010AEd8BFACD98A5D4D4C635cB20eDB4e8",
+  "deployer": "0x5Cc9CBB73d65Eb832342E788929294CD8237148f",
+  "encryptedERC": "0xaE10f3005c359cf6C68eaE6a245DcC4CF100DA21",
+  "ofelBook": "0x40Fb0a21A8736d3cE05008D33888FE207975D5aB",
+  "registrar": "0x3f6085124eC68Ea1BAD105b61c046d68F59B087F",
+  "tAVAX": "0xc79eb2e7e25d053968d871f65f4bB5bD1Ddf7476",
+  "tUSDC": "0xbAB44432a831383387eE19AaE227ae937CB020E7",
+  "network": "fuji-l1",
+  "chainId": 77077,
+  "networkID": 5,
+  "subnetID": "soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt",
+  "blockchainID": "29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd",
+  "blockchainIdHex": "0x977b8ab415efa008ec3a2944d3a7be3ce0d9c16be175ab1e758bbdda6c349c16",
+  "warpPrecompile": "0x0200000000000000000000000000000000000005",
+  "threshold": 2,
+  "validatorURIs": [
+    "https://ofel-v1.201-18-198-162.sslip.io",
+    "https://ofel-v2.201-18-198-162.sslip.io",
+    "https://ofel-v3.201-18-198-162.sslip.io"
+  ],
+  "pchain": "https://api.avax-test.network/ext/bc/P",
+  "bondWei": "100000000000000000",
+  "revealWindowS": 120,
+  "settleWindowS": 900
+}
