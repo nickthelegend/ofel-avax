@@ -54,25 +54,22 @@ export async function recentBatches(n = 12): Promise<Batch[]> {
   return Promise.all(ids.map(getBatch));
 }
 
-/** The most recent batches that received orders (empty batches skipped), newest first. */
-export async function batchesWithOrders(n: number, scan = 200): Promise<Batch[]> {
-  const count = await batchCount();
-  const out: Batch[] = [];
-  for (let id = count; id >= 1n && id > count - BigInt(scan) && out.length < n; id--) {
-    const b = await getBatch(id);
-    if (b.orderCount > 0) out.push(b);
-  }
-  return out;
+const sealedIds = parseAbiItem("event OrderSealed(uint256 indexed batchId, uint32 indexed index, address indexed trader, bytes32 commitment, uint256 cx, uint256 cy, bytes envelope)");
+const clearedEv = parseAbiItem("event BatchCleared(uint256 indexed batchId, uint64 price, uint64 buyTotal, uint64 sellTotal, uint32 filled)");
+
+/** The most recent batches that received orders, newest first (from OrderSealed logs: the agent opens a batch every
+ * 90 s, so most batches are empty and scanning them one by one would cost hundreds of reads). */
+export async function batchesWithOrders(n: number): Promise<Batch[]> {
+  const logs = await client.getLogs({ address: cfg.book, event: sealedIds, fromBlock: 0n, toBlock: "latest" });
+  const ids = [...new Set(logs.map((l) => l.args.batchId as bigint))].sort((a, b) => (a < b ? 1 : -1)).slice(0, n);
+  return Promise.all(ids.map(getBatch));
 }
 
-/** The most recent batch that cleared with a cross (scans back up to 200 batches). */
+/** The most recent batch that cleared with a cross. */
 export async function lastClearedBatch(): Promise<Batch | undefined> {
-  const count = await batchCount();
-  for (let id = count; id >= 1n && id > count - 200n; id--) {
-    const b = await getBatch(id);
-    if (b.state === 3 && b.price > 0n) return b;
-  }
-  return undefined;
+  const logs = await client.getLogs({ address: cfg.book, event: clearedEv, fromBlock: 0n, toBlock: "latest" });
+  const last = logs.filter((l) => (l.args.price as bigint) > 0n).at(-1);
+  return last ? getBatch(last.args.batchId as bigint) : undefined;
 }
 
 export async function getOrders(id: bigint): Promise<Order[]> {
@@ -160,4 +157,38 @@ export async function checkSignatures(b: Batch, vs: ValidatorStatus[]): Promise<
 export async function latestBlockTime(): Promise<number> {
   const b = await client.getBlock();
   return Number(b.timestamp);
+}
+
+// ------------------------------------------------------- P-Chain balances
+
+export interface ValidatorBalance {
+  nodeID: string;
+  validationID: string;
+  balance: bigint; // nAVAX
+  runsOut: number; // unix seconds, at the 512 nAVAX/s validator fee
+}
+
+async function pcall<T>(method: string, params: unknown): Promise<T> {
+  const r = await fetch(cfg.pchain, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  const j = await r.json();
+  if (!j.result) throw new Error(`${method}: ${j.error?.message ?? r.status}`);
+  return j.result as T;
+}
+
+/** Each L1 validator's P-Chain fee balance and when it runs out (Fuji: 512 nAVAX per second per validator). */
+export async function validatorBalances(): Promise<ValidatorBalance[]> {
+  const [{ validators }, { timestamp }] = await Promise.all([
+    pcall<{ validators: { nodeID: string; validationID?: string }[] }>("platform.getCurrentValidators", { subnetID: cfg.subnetID }),
+    pcall<{ timestamp: string }>("platform.getTimestamp", {}),
+  ]);
+  const t0 = Date.parse(timestamp) / 1000;
+  return Promise.all(
+    validators
+      .filter((v) => v.validationID)
+      .map(async (v) => {
+        const cur = await pcall<{ balance: string }>("platform.getL1Validator", { validationID: v.validationID });
+        const balance = BigInt(cur.balance);
+        return { nodeID: v.nodeID, validationID: v.validationID!, balance, runsOut: t0 + Number(balance / 512n) };
+      }),
+  );
 }

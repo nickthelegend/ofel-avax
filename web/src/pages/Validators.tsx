@@ -1,11 +1,13 @@
 import { cfg } from "../lib/config";
-import { validatorStatus } from "../lib/chain";
+import { validatorBalances, validatorStatus } from "../lib/chain";
 import { useLive } from "../lib/hooks";
 import { short } from "../lib/format";
 import { Empty, ErrorBox, Hash, Skel } from "../components/ui";
 
 export function Validators() {
   const vs = useLive(validatorStatus, [], 4000);
+  const bal = useLive(() => (cfg.fuji ? validatorBalances() : Promise.resolve([])), [], 60000);
+  const balOf = (nodeID: string) => bal.data?.find((b) => b.nodeID === nodeID);
   const online = vs.data?.filter((v) => v.online).length ?? 0;
   const total = vs.data?.length ?? 0;
   return (
@@ -29,7 +31,12 @@ export function Validators() {
                 {vs.data ? (online >= cfg.threshold ? `Batches can open (needs ${cfg.threshold})` : `Below threshold: batches wait`) : "Checking"}
               </span>
               <span className="pill">Consensus k=3, α=2</span>
-              <span className="pill">Subnet {short(cfg.subnetID, 5)}</span>
+              {cfg.fuji ? (
+                <a className="pill" href={cfg.l1Page} target="_blank" rel="noreferrer">L1 {short(cfg.subnetID, 5)} ↗</a>
+              ) : (
+                <span className="pill">Subnet {short(cfg.subnetID, 5)}</span>
+              )}
+              {cfg.conversionTx && <a className="pill" href={cfg.pTx(cfg.conversionTx)} target="_blank" rel="noreferrer">ConvertSubnetToL1 ↗</a>}
             </div>
           </div>
           <img className="eclipse float" style={{ width: 200, height: 200 }} src="/art/validators.webp" alt="" width={200} height={200} />
@@ -43,13 +50,23 @@ export function Validators() {
         {!!vs.data?.length && (
           <div className="tbl-wrap">
             <table className="tbl">
-              <thead><tr><th>Node</th><th>BLS public key (G1)</th><th className="r">Weight</th><th>Endpoint</th><th className="r">Status</th></tr></thead>
+              <thead><tr><th>Node</th><th>BLS public key (G1)</th><th className="r">Weight</th>{cfg.fuji && <th className="r">P-Chain balance</th>}<th>Endpoint</th><th className="r">Status</th></tr></thead>
               <tbody>
                 {vs.data.map((v) => (
                   <tr key={v.nodeID}>
                     <td><Hash v={v.nodeID} n={6} /></td>
                     <td><Hash v={v.publicKey} n={8} /></td>
                     <td className="r num">{v.weight?.toString() ?? "—"}</td>
+                    {cfg.fuji && (
+                      <td className="r num" title="Validator fee: 512 nAVAX per second">
+                        {balOf(v.nodeID) ? (
+                          <>
+                            {(Number(balOf(v.nodeID)!.balance) / 1e9).toFixed(4)} AVAX
+                            <div className="faint" style={{ fontSize: 12 }}>until {new Date(balOf(v.nodeID)!.runsOut * 1000).toISOString().slice(0, 10)}</div>
+                          </>
+                        ) : bal.error ? <span className="faint">—</span> : <Skel w="80px" />}
+                      </td>
+                    )}
                     <td className="mono muted" style={{ fontSize: 13 }}>{v.uri ?? "—"}</td>
                     <td className="r">{v.online ? <span className="pill ok"><span className="dot" />Online</span> : <span className="pill bad"><span className="dot off" />Offline</span>}</td>
                   </tr>

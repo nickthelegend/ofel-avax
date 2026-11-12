@@ -7,15 +7,23 @@ import { countdown, short, units, utc } from "../lib/format";
 import { myOrders, parseUnits2, sealAndSubmit, sideLabel, tryOpenEarly, type EarlyAttempt, type SealResult } from "../lib/orders";
 import { useWallet } from "../lib/wallet";
 import { Amount, Empty, ErrorBox, Hash, Link, Skel } from "../components/ui";
+import { SetupSteps, useSetupState } from "../components/Setup";
 
 const PRESETS = ["100", "500", "1000", "2500"];
+// Starting limits per side: a buyer's cap sits above the house ask and a seller's floor below the house bid.
+const DEFAULT_LIMIT = { [BUY]: "31.50", [SELL]: "31.20" } as Record<Side, string>;
 
 function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
   const w = useWallet();
   const now = useNow();
   const [side, setSide] = useState<Side>(BUY);
   const [size, setSize] = useState("1250");
-  const [limit, setLimit] = useState("31.50");
+  const [limit, setLimit] = useState(DEFAULT_LIMIT[BUY]);
+  const setup = useSetupState();
+  const pickSide = (x: Side) => {
+    setSide(x);
+    if (limit === DEFAULT_LIMIT[side]) setLimit(DEFAULT_LIMIT[x]);
+  };
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
   const [done, setDone] = useState<SealResult>();
@@ -23,7 +31,8 @@ function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
   const limitU = parseUnits2(limit);
   const open = batch?.state === 1 && Number(batch.closeAt) > now + 2;
   const notional = sizeU && limitU ? (sizeU * limitU) / 100n : 0n;
-  const can = !!w.client && open && !!sizeU && sizeU > 0n && !!limitU && limitU > 0n && !busy;
+  const needsSetup = !!w.address && !!setup.r.data && !setup.ready;
+  const can = !!w.client && open && !needsSetup && !!sizeU && sizeU > 0n && !!limitU && limitU > 0n && !busy;
 
   async function submit() {
     if (!batch || !w.client || !sizeU || !limitU) return;
@@ -47,8 +56,8 @@ function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
         <span className="muted" style={{ fontSize: 13 }}>{batch ? `Batch #${batch.id}` : "No open batch"}</span>
       </div>
       <div className="seg" role="group" aria-label="Side">
-        <button className="b" aria-pressed={side === BUY} onClick={() => setSide(BUY)}>Buy tAVAX</button>
-        <button className="s" aria-pressed={side === SELL} onClick={() => setSide(SELL)}>Sell tAVAX</button>
+        <button className="b" aria-pressed={side === BUY} onClick={() => pickSide(BUY)}>Buy tAVAX</button>
+        <button className="s" aria-pressed={side === SELL} onClick={() => pickSide(SELL)}>Sell tAVAX</button>
       </div>
       <div className="field">
         <label htmlFor="size"><span>Size</span><span>tAVAX</span></label>
@@ -74,9 +83,13 @@ function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
         <div className="kv"><span className="muted">Bond (refunded)</span><b className="num">0.10 OFEL</b></div>
         <div className="kv"><span className="muted">Opens at</span><b className="num">{batch ? utc(batch.closeAt) : "—"}</b></div>
       </div>
-      <button className="btn ink block" disabled={!can} onClick={submit}>
-        {busy ? "Sealing…" : !w.client ? "Connect to seal an order" : !open ? "Waiting for the next batch" : `Seal ${side === BUY ? "buy" : "sell"} order`}
-      </button>
+      {needsSetup ? (
+        <div style={{ marginTop: 14 }}><SetupSteps state={setup} /></div>
+      ) : (
+        <button className="btn ink block" disabled={!can} onClick={submit}>
+          {busy ? "Sealing…" : !w.client ? "Connect to seal an order" : !open ? "Waiting for the next batch" : `Seal ${side === BUY ? "buy" : "sell"} order`}
+        </button>
+      )}
       {err && <div style={{ marginTop: 12 }}><ErrorBox>{err}</ErrorBox></div>}
       {done && (
         <div className="sealed-box">

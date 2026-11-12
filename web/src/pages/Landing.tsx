@@ -21,7 +21,7 @@ function Cell({ v }: { v: string }) {
 }
 
 export function Landing() {
-  const batches = useLive(() => batchesWithOrders(60, 400), [], 8000);
+  const batches = useLive(() => batchesWithOrders(60), [], 8000);
   const vals = useLive(validatorStatus, [], 8000);
   const cleared = batches.data?.filter((b) => b.state === 3 && b.price > 0n) ?? [];
   const last = cleared.find((b) => b.price > 0n);

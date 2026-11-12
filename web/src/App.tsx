@@ -59,6 +59,12 @@ function WalletButton() {
               <span className="faint mono" style={{ fontSize: 12 }}>local key</span>
             </button>
           ))}
+          {cfg.faucet && (
+            <button role="menuitem" onClick={() => (w.connectTest(), setOpen(false))}>
+              Test wallet
+              <span className="faint" style={{ fontSize: 12 }}>new key in this browser</span>
+            </button>
+          )}
           <button role="menuitem" onClick={() => (w.connectInjected(), setOpen(false))}>
             Browser wallet
           </button>
@@ -70,7 +76,7 @@ function WalletButton() {
               </button>
             </>
           )}
-          {!QA_ROLES.length && <div className="note">The recorded demo uses the QA build, which carries local test signers.</div>}
+          {!QA_ROLES.length && !cfg.faucet && <div className="note">The recorded demo uses the QA build, which carries local test signers.</div>}
         </div>
       )}
     </div>

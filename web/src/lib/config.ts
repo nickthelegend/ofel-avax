@@ -1,10 +1,12 @@
 // Live deployment the desk reads. Addresses and endpoints come from deployments/<network>.json,
 // written by the deploy script; nothing here is invented.
 import local from "../../../deployments/local.json";
+import fujiL1 from "../../../deployments/fuji-l1.json";
+import fujiStatus from "../../../deployments/fuji.json";
 import { defineChain, type Hex } from "viem";
 
-type Deployment = typeof local & { e2e?: unknown };
-const NETWORKS: Record<string, Deployment> = { local };
+type Deployment = typeof local & { e2e?: unknown; faucet?: string; house?: string; api?: string };
+const NETWORKS: Record<string, Deployment> = { local, "fuji-l1": fujiL1 as unknown as Deployment };
 
 export const NETWORK = (import.meta.env.VITE_OFEL_NETWORK as string | undefined) ?? "local";
 const dep = NETWORKS[NETWORK];
@@ -12,7 +14,8 @@ if (!dep) throw new Error(`Setup required: no deployments/${NETWORK}.json bundle
 
 export const cfg = {
   network: NETWORK,
-  networkLabel: NETWORK === "local" ? "Ofel L1 · local network" : `Ofel L1 · ${NETWORK}`,
+  networkLabel: NETWORK === "local" ? "Ofel L1 · local network" : NETWORK === "fuji-l1" ? "Ofel L1 · Fuji" : `Ofel L1 · ${NETWORK}`,
+  fuji: NETWORK === "fuji-l1",
   chainId: dep.chainId,
   networkID: dep.networkID,
   subnetID: dep.subnetID,
@@ -29,6 +32,13 @@ export const cfg = {
   tUSDC: dep.tUSDC as Hex,
   agent: dep.agent as Hex,
   e2e: (dep as Deployment).e2e as Record<string, unknown> | undefined,
+  faucet: dep.faucet as Hex | undefined,
+  house: dep.house as Hex | undefined,
+  api: dep.api,
+  /** Avalanche Explorer pages for P-Chain transactions (the L1's own EVM txs have no hosted explorer). */
+  pTx: (id: string) => `https://subnets-test.avax.network/p-chain/tx/${id}`,
+  l1Page: `https://subnets-test.avax.network/subnets/${dep.subnetID}`,
+  conversionTx: NETWORK === "fuji-l1" ? fujiStatus.pChainTxs.find((t) => t.kind === "ConvertSubnetToL1Tx")?.txID : undefined,
 };
 
 export const chain = defineChain({
