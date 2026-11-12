@@ -7,6 +7,7 @@ import { client } from "../lib/chain";
 import { eercFor, isRegistered, privateBalance } from "../lib/eerc";
 import { useLive } from "../lib/hooks";
 import { useWallet } from "../lib/wallet";
+import { Icon } from "./ui";
 
 const faucetAbi = parseAbi(["function claimed(address) view returns (bool)"]);
 
@@ -70,7 +71,7 @@ export function SetupSteps({ state }: { state: ReturnType<typeof useSetupState> 
       }
       for (const [token, amount, sym] of [[cfg.tUSDC, cur.publicU, "tUSDC"], [cfg.tAVAX, cur.publicA, "tAVAX"]] as const) {
         if (amount === 0n) continue;
-        setStep(`Depositing ${sym} into eERC…`);
+        setStep(`Depositing ${sym} into your private balance…`);
         const a = await w.client.writeContract({ address: token, abi: erc20Abi, functionName: "approve", args: [cfg.eerc, amount], account: w.client.account, chain: undefined });
         await client.waitForTransactionReceipt({ hash: a });
         const dep = await e.deposit(amount, token, 2n);
@@ -86,21 +87,33 @@ export function SetupSteps({ state }: { state: ReturnType<typeof useSetupState> 
     }
   }
 
-  const row = (label: string, done: boolean) => (
-    <div className="kv">
-      <span className="muted">{label}</span>
-      <b>{done ? "Done" : "To do"}</b>
-    </div>
-  );
+  const rows: [string, boolean][] = [
+    ["Test OFEL, tAVAX and tUSDC", funded],
+    ["eERC key registered", d.registered],
+    ["Assets in your private balance", d.registered && d.publicA === 0n && d.publicU === 0n],
+  ];
   return (
-    <div style={{ margin: "4px 0 16px" }} aria-label="Set up this wallet">
-      {row("Test OFEL, tAVAX, tUSDC", funded)}
-      {row("eERC key registered", d.registered)}
-      {row("Assets in private balance", d.registered && d.publicA === 0n && d.publicU === 0n)}
-      <button className="btn ink block" disabled={!!step} onClick={run}>
-        {step ?? (funded ? "Finish setup" : "Get test funds")}
+    <div className="setup" aria-label="Set up this wallet" data-film="setup">
+      <ol className="tsteps">
+        {rows.map(([label, done]) => (
+          <li key={label} className={done ? "done" : ""}>
+            <span className="step-dot" aria-hidden>{done ? <Icon name="check" size={12} /> : ""}</span>
+            <span>{label}</span>
+          </li>
+        ))}
+      </ol>
+      <button className="btn btn-primary btn-block btn-lg" disabled={!!step} onClick={run} data-film="get-funds">
+        {step ? (
+          <>
+            <i className="spin" aria-hidden /> {step}
+          </>
+        ) : funded ? (
+          "Finish setup"
+        ) : (
+          "Get test funds"
+        )}
       </button>
-      {err && <div className="sell" style={{ fontSize: 12.5, marginTop: 8 }}>{err}</div>}
+      {err && <p className="sheet-err" role="alert">{err}</p>}
     </div>
   );
 }

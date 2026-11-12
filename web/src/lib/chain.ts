@@ -112,8 +112,16 @@ export interface ValidatorStatus extends Validator {
   error?: string;
 }
 
+// The validator set only changes with a P-Chain transaction, so one read serves every panel for five minutes (the
+// public P-Chain endpoint rate-limits busy clients). A failed read is retried on the next call, never cached.
+let setCache: { at: number; p: Promise<Validator[]> } | undefined;
 export async function validatorSet(): Promise<Validator[]> {
-  return getL1Validators(cfg.pchain, cfg.subnetID);
+  if (!setCache || Date.now() - setCache.at > 300_000) {
+    const p = getL1Validators(cfg.pchain, cfg.subnetID);
+    setCache = { at: Date.now(), p };
+    p.catch(() => (setCache = undefined));
+  }
+  return setCache.p;
 }
 
 export async function validatorStatus(): Promise<ValidatorStatus[]> {

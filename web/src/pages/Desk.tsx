@@ -1,321 +1,356 @@
-import { useState } from "react";
-import { BUY, SELL, type Side } from "@ofel/core";
+// The desk: Eidolon's trading terminal layout on Ofel's data. A night market bar, the chart, the sealed book in the
+// centre, the block-order ticket on the right and tabbed tables below. Every number is read live from the Ofel L1,
+// Avalanche Fuji (Chainlink, P-Chain) or a public exchange named on screen.
+import { useEffect, useMemo, useState } from "react";
+import { bytesToHex } from "warplock";
 import { cfg } from "../lib/config";
-import { batchesWithOrders, getSealed, lastClearedBatch, recentBatches, sealedCountOf, validatorStatus, type Batch } from "../lib/chain";
+import { checkSignatures, getOrders, getSealed, recentBatches, validatorStatus, type Batch, type ValidatorStatus } from "../lib/chain";
 import { useLive, useNow } from "../lib/hooks";
 import { countdown, short, units, utc } from "../lib/format";
-import { myOrders, parseUnits2, sealAndSubmit, sideLabel, tryOpenEarly, type EarlyAttempt, type SealResult } from "../lib/orders";
-import { useWallet } from "../lib/wallet";
-import { Amount, Empty, ErrorBox, Hash, Link, Skel } from "../components/ui";
-import { SetupSteps, useSetupState } from "../components/Setup";
+import { tryOpenEarly, type EarlyAttempt } from "../lib/orders";
+import { fetchCandles, INTERVALS, type Interval } from "../lib/candles";
+import { chainlinkAvax, feedUrl, fix, ofelClears, usd, type Clear } from "../lib/market";
+import { DeskChart, type Ohlc } from "../components/CandleChart";
+import { Ticket, type TicketDraft } from "../components/Ticket";
+import { DeskTabs } from "../components/DeskTabs";
+import { Hash, Icon, Link, Pair, Skel, State, useMedia } from "../components/ui";
 
-const PRESETS = ["100", "500", "1000", "2500"];
-// Starting limits per side: a buyer's cap sits above the house ask and a seller's floor below the house bid.
-const DEFAULT_LIMIT = { [BUY]: "31.50", [SELL]: "31.20" } as Record<Side, string>;
-
-function Ticket({ batch, onSealed }: { batch?: Batch; onSealed: () => void }) {
-  const w = useWallet();
-  const now = useNow();
-  const [side, setSide] = useState<Side>(BUY);
-  const [size, setSize] = useState("1250");
-  const [limit, setLimit] = useState(DEFAULT_LIMIT[BUY]);
-  const setup = useSetupState();
-  const pickSide = (x: Side) => {
-    setSide(x);
-    if (limit === DEFAULT_LIMIT[side]) setLimit(DEFAULT_LIMIT[x]);
-  };
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string>();
-  const [done, setDone] = useState<SealResult>();
-  const sizeU = parseUnits2(size);
-  const limitU = parseUnits2(limit);
-  const open = batch?.state === 1 && Number(batch.closeAt) > now + 2;
-  const notional = sizeU && limitU ? (sizeU * limitU) / 100n : 0n;
-  const needsSetup = !!w.address && !!setup.r.data && !setup.ready;
-  const can = !!w.client && open && !needsSetup && !!sizeU && sizeU > 0n && !!limitU && limitU > 0n && !busy;
-
-  async function submit() {
-    if (!batch || !w.client || !sizeU || !limitU) return;
-    setBusy(true);
-    setErr(undefined);
-    try {
-      const k = await w.selfKey();
-      setDone(await sealAndSubmit(w.client, k, batch, side, limitU, sizeU));
-      onSealed();
-    } catch (e) {
-      setErr((e as Error).message.split("\n")[0].slice(0, 240));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="ticket" aria-label="Order ticket">
-      <div className="between" style={{ marginBottom: 12 }}>
-        <b style={{ fontSize: 16, letterSpacing: "-0.01em" }}>Block order</b>
-        <span className="muted" style={{ fontSize: 13 }}>{batch ? `Batch #${batch.id}` : "No open batch"}</span>
-      </div>
-      <div className="seg" role="group" aria-label="Side">
-        <button className="b" aria-pressed={side === BUY} onClick={() => pickSide(BUY)}>Buy tAVAX</button>
-        <button className="s" aria-pressed={side === SELL} onClick={() => pickSide(SELL)}>Sell tAVAX</button>
-      </div>
-      <div className="field">
-        <label htmlFor="size"><span>Size</span><span>tAVAX</span></label>
-        <div className="input">
-          <input id="size" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} aria-invalid={size !== "" && !sizeU} />
-          <span className="unit">tAVAX</span>
-        </div>
-        <div className="chips">
-          {PRESETS.map((p) => (
-            <button key={p} className="chip" onClick={() => setSize(p)}>{Number(p).toLocaleString("en-US")}</button>
-          ))}
-        </div>
-      </div>
-      <div className="field">
-        <label htmlFor="limit"><span>{side === BUY ? "Pay at most" : "Receive at least"}</span><span>tUSDC per tAVAX</span></label>
-        <div className="input">
-          <input id="limit" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-invalid={limit !== "" && !limitU} />
-          <span className="unit">tUSDC</span>
-        </div>
-      </div>
-      <div style={{ marginTop: 14 }}>
-        <div className="kv"><span className="muted">Notional at limit</span><b className="num">{units(notional)} tUSDC</b></div>
-        <div className="kv"><span className="muted">Bond (refunded)</span><b className="num">0.10 OFEL</b></div>
-        <div className="kv"><span className="muted">Sealed until</span><b className="num">{batch ? utc(batch.closeAt) : "—"}</b></div>
-      </div>
-      {needsSetup ? (
-        <div style={{ marginTop: 14 }}><SetupSteps state={setup} /></div>
-      ) : (
-        !w.client && cfg.faucet ? (
-          <button className="btn ink block" onClick={() => w.connectTest()}>Start with a test wallet</button>
-        ) : (
-          <button className="btn ink block" disabled={!can} onClick={submit}>
-            {busy ? "Sealing…" : !w.client ? "Connect to seal an order" : !open ? "Waiting for the next batch" : `Seal ${side === BUY ? "buy" : "sell"} order`}
-          </button>
-        )
-      )}
-      {err && <div style={{ marginTop: 12 }}><ErrorBox>{err}</ErrorBox></div>}
-      {done && (
-        <div className="sealed-box">
-          <img src="/art/hero.webp" alt="Sealed order" width={72} height={72} />
-          <div style={{ fontSize: 13.5 }}>
-            <b>Sealed until {utc(done.closeAt)}</b>
-            <div className="muted">
-              {done.bytes.toLocaleString()} B of ciphertext in batch #{done.batchId.toString()}. Any {done.threshold} of {done.validators} validators open it after T.
-            </div>
-            <div className="mono" style={{ fontSize: 12.5 }}>{short(done.tx, 6)}</div>
-          </div>
-        </div>
-      )}
-      <div className="vis" aria-label="Who sees what">
-        <div><span className="muted">Now</span><span>Everyone sees ciphertext and your bond.</span></div>
-        <div><span className="muted">At close</span><span>Side and limit open; the price is set from them.</span></div>
-        <div><span className="muted">Never</span><span><b>Your size.</b> Only you and the auditor read it.</span></div>
-      </div>
-    </section>
-  );
-}
-
-function Book({ batch, refreshKey }: { batch?: Batch; refreshKey: number }) {
-  const now = useNow();
-  const sealed = useLive(() => (batch ? getSealed(batch.id) : Promise.resolve([])), [batch?.id, refreshKey], 4000);
-  const [early, setEarly] = useState<EarlyAttempt>();
-  const [trying, setTrying] = useState(false);
-  const left = batch ? Number(batch.closeAt) - now : 0;
-  const isOpen = batch?.state === 1 && left > 0;
-  return (
-    <section className="panel" aria-label="Sealed book">
-      <div className="book-hero">
-        <div>
-          <div className="muted" style={{ fontSize: 14 }}>
-            {batch ? (isOpen ? `Batch #${batch.id} closes in` : batch.state === 1 ? `Batch #${batch.id} is past T, closing` : `Batch #${batch.id}`) : "Waiting for the agent to open a batch"}
-          </div>
-          <div className="big num" style={{ margin: "8px 0 10px" }} aria-live="polite">
-            {batch ? (isOpen ? countdown(left) : "00:00") : "—"}
-          </div>
-          <div className="muted" style={{ maxWidth: 460 }}>
-            Every order is sealed until {batch ? utc(batch.closeAt) : "the close"}. Nobody can open the book early: not us, not any one validator.
-          </div>
-          <div className="row wrap" style={{ marginTop: 16 }}>
-            <button
-              className="btn sm"
-              disabled={!batch || trying}
-              onClick={async () => {
-                if (!batch) return;
-                setTrying(true);
-                try {
-                  setEarly(await tryOpenEarly(batch));
-                } finally {
-                  setTrying(false);
-                }
-              }}
-            >
-              {trying ? "Asking the chain…" : "Try to open it now"}
-            </button>
-            <Link to={batch ? `/batches/${batch.id}` : "/batches"} className="btn sm ghost">Batch details</Link>
-          </div>
-          {early && (
-            <div className="note" style={{ marginTop: 12 }}>
-              <div>closeBatch: <b className={early.contract.includes("TooEarly") ? "light" : ""}>{early.contract}</b></div>
-              {early.validators.map((v) => (
-                <div key={v.nodeID} className="row" style={{ gap: 8 }}>
-                  <span className={v.refused ? "dot wait" : "dot"} />
-                  <span className="mono">{short(v.nodeID, 5)}</span>
-                  <span className="muted">{v.result}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <img className="eclipse float" src="/art/eclipse.webp" alt="" width={240} height={240} />
-      </div>
-      <div className="panel-h" style={{ borderTop: "1px solid var(--line)" }}>
-        <h3>What the chain shows for batch {batch ? `#${batch.id}` : ""}</h3>
-        <span className="muted" style={{ fontSize: 13 }}>{sealed.data?.length ?? 0} sealed</span>
-      </div>
-      {sealed.error && <div className="panel-b"><ErrorBox>{sealed.error}</ErrorBox></div>}
-      {!sealed.data && !sealed.error && <div className="panel-b stack"><Skel /><Skel w="70%" /></div>}
-      {sealed.data && sealed.data.length === 0 && <Empty title="No sealed orders yet">The first order in this batch shows up here as ciphertext.</Empty>}
-      {sealed.data && sealed.data.length > 0 && (
-        <div className="tbl-wrap">
-          <table className="tbl">
-            <thead><tr><th>#</th><th>Trader</th><th>Ciphertext</th><th className="r">Status</th></tr></thead>
-            <tbody>
-              {sealed.data.map((s) => (
-                <tr key={s.tx}>
-                  <td className="num">{s.index}</td>
-                  <td><Hash v={s.trader} /></td>
-                  <td><span className="cipher">{s.envelope.slice(194, 194 + 56)}…</span> <span className="faint">{((s.envelope.length - 2) / 2).toLocaleString()} B</span></td>
-                  <td className="r"><span className="pill sealed">Sealed</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Mine({ batches, refreshKey }: { batches?: Batch[]; refreshKey: number }) {
-  const w = useWallet();
-  const [unlock, setUnlock] = useState(0);
-  const count = useLive(async () => (w.address ? sealedCountOf(w.address) : undefined), [w.address, refreshKey], 0);
-  const rows = useLive(
-    async () => (w.address && batches && unlock > 0 ? myOrders(w.address, await w.selfKey(), batches) : undefined),
-    [w.address, batches?.map((b) => `${b.id}:${b.state}:${b.orderCount}`).join(","), refreshKey, unlock],
-    0,
-  );
-  if (!w.address) return <Empty art="key" title="Connect to see your orders">Your orders are decrypted in this browser with a key derived from your wallet signature.</Empty>;
-  if (count.data === 0) return <Empty title="No orders from this wallet yet">Seal one with the ticket.</Empty>;
-  if (unlock === 0)
-    return (
-      <Empty art="key" title={count.data ? `${count.data} sealed order${count.data === 1 ? "" : "s"} from this wallet` : "Your orders are sealed, even here"}>
-        <button className="btn sm primary" style={{ marginTop: 8 }} onClick={() => setUnlock(1)}>Decrypt my orders</button>
-      </Empty>
-    );
-  if (rows.error) return <div className="panel-b"><ErrorBox>{rows.error}</ErrorBox></div>;
-  if (!rows.data) return <div className="panel-b stack"><Skel /><Skel w="60%" /></div>;
-  if (!rows.data.length) return <Empty title="No orders from this wallet yet">Seal one with the ticket.</Empty>;
-  return (
-    <div className="tbl-wrap">
-      <table className="tbl">
-        <thead><tr><th>Batch</th><th>Side</th><th className="r">Size</th><th className="r hide-sm">Limit</th><th className="r">Fill</th><th className="r">Status</th></tr></thead>
-        <tbody>
-          {rows.data.map((r) => (
-            <tr key={r.tx}>
-              <td>#{r.batch.id.toString()}</td>
-              <td className={r.mine.side === BUY ? "buy" : "sell"}>{sideLabel(r.mine.side)}</td>
-              <td className="r num">{units(r.mine.size)}</td>
-              <td className="r num hide-sm">{units(r.mine.limit)}</td>
-              <td className="r num">{r.fill ? <>{units(r.fill.base)} @ {units(r.batch.price)}</> : <span className="faint">—</span>}</td>
-              <td className="r"><StatusPill s={r.order.status} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export function StatusPill({ s }: { s: number }) {
-  const label = ["None", "Sealed", "Revealed", "Void", "Unfilled", "Filled", "Settled", "Bond back"][s] ?? "?";
-  const cls = s === 1 ? "pill sealed" : s === 5 || s === 6 || s === 7 ? "pill ok" : s === 3 ? "pill bad" : "pill";
-  return <span className={cls}>{label}</span>;
-}
+const IVS: Interval[] = ["1m", "5m", "15m", "1h"];
 
 export function Desk() {
+  const wide = useMedia("(min-width: 1200px)");
+  const now = useNow();
   const batches = useLive(() => recentBatches(12), [], 3000);
-  const vals = useLive(validatorStatus, [], 6000);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const withOrders = useLive(() => batchesWithOrders(10), [batches.data?.[0]?.id, batches.data?.[0]?.orderCount, batches.data?.[0]?.state, refreshKey], 0);
-  const [tab, setTab] = useState<"mine" | "batches">("mine");
   const current = batches.data?.[0];
-  const lastClear = useLive(() => lastClearedBatch(), [batches.data?.[0]?.id, batches.data?.[0]?.state], 0).data;
-  const online = vals.data?.filter((v) => v.online).length;
+  const vals = useLive(validatorStatus, [], 8000);
+  const clears = useLive(ofelClears, [current?.id, current?.state], 20000);
+  const ref = useLive(() => chainlinkAvax(24), [], 60000);
+  const [iv, setIv] = useState<Interval>(() => {
+    try {
+      return (localStorage.getItem("ofel.iv") as Interval) || "5m";
+    } catch {
+      return "5m";
+    }
+  });
+  const candles = useLive(() => fetchCandles("AVAX", iv, 300), [iv], 20000);
+  const [draft, setDraft] = useState<TicketDraft>({ side: 1, limit: null });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const lastClear = clears.data?.at(-1);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ofel.iv", iv);
+    } catch {
+      /* storage blocked */
+    }
+  }, [iv]);
 
   return (
-    <div className="page">
-      <div className="strip" aria-label="Market">
+    <main className={`term ${wide ? "term-wide" : ""}`} id="main">
+      <MarketBar current={current} now={now} vals={vals.data} valsErr={vals.error} lastClear={lastClear} refPrice={ref.data} refErr={ref.error} candles={candles.data} iv={iv} setIv={setIv} l1Err={batches.error} />
+      <ChartPanel iv={iv} candles={candles.data} candlesErr={candles.error} rounds={ref.data?.rounds ?? []} clears={clears.data ?? []} draft={draft} />
+      <BookPanel batch={current} prev={batches.data?.[1]} now={now} vals={vals.data} refreshKey={refreshKey} />
+      <Ticket batch={current} lastClear={lastClear} onDraft={setDraft} onSealed={() => setRefreshKey((k) => k + 1)} />
+      <DeskTabs batches={batches.data} clears={clears.data} clearsErr={clears.error} lastClear={lastClear} refreshKey={refreshKey} />
+    </main>
+  );
+}
+
+/* ================================================================ market bar (night) */
+function MarketBar({
+  current,
+  now,
+  vals,
+  valsErr,
+  lastClear,
+  refPrice,
+  refErr,
+  candles,
+  iv,
+  setIv,
+  l1Err,
+}: {
+  current?: Batch;
+  now: number;
+  vals?: ValidatorStatus[];
+  valsErr?: string;
+  lastClear?: Clear;
+  refPrice?: { price: number; updatedAt: number };
+  refErr?: string;
+  candles?: { candles: { t: number; c: number }[]; source: { name: string; pair: string } };
+  iv: Interval;
+  setIv: (i: Interval) => void;
+  l1Err?: string;
+}) {
+  const left = current ? Number(current.closeAt) - now : 0;
+  const open = current?.state === 1 && left > 0;
+  const k = candles?.candles ?? [];
+  const last = k.at(-1);
+  const hourAgo = last ? [...k].reverse().find((c) => c.t <= last.t - 3600) : undefined;
+  const chg = last && hourAgo ? ((last.c - hourAgo.c) / hourAgo.c) * 100 : null;
+  const online = vals?.filter((v) => v.online).length;
+  return (
+    <section className="mbar dark" aria-label="Market" data-film="market-bar">
+      <div className="mb-pair">
+        <Pair size={32} />
         <div>
-          <img src="/art/coins.webp" alt="" width={36} height={36} />
-          <div>
-            <div className="pair">tAVAX / tUSDC</div>
-            <div className="muted" style={{ fontSize: 12.5 }}>Sealed batch auction</div>
-          </div>
-        </div>
-        <div><div className="k">Batch</div><div className="v num">{current ? `#${current.id} · ${["", "Open", "Closed", "Cleared"][current.state]}` : batches.error ? "—" : "…"}</div></div>
-        <div><div className="k">Closes at</div><div className="v num">{current ? utc(current.closeAt) : "—"}</div></div>
-        <div><div className="k">Last clearing price</div><div className="v num">{lastClear ? `${units(lastClear.price)} tUSDC` : "No clear yet"}</div></div>
-        <div><div className="k">Last batch volume</div><div className="v num">{lastClear ? `${units(lastClear.buyTotal < lastClear.sellTotal ? lastClear.buyTotal : lastClear.sellTotal)} tAVAX` : "—"}</div></div>
-        <div><div className="k">Validators</div><div className="v num">{online !== undefined ? `${online}/${vals.data!.length} online · any ${cfg.threshold}` : vals.error ? "P-Chain unreachable" : "…"}</div></div>
-      </div>
-      {batches.error && <div style={{ marginBottom: 16 }}><ErrorBox>Can't reach the Ofel L1 at {cfg.rpc}: {batches.error}</ErrorBox></div>}
-      <div className="grid-desk">
-        <Ticket batch={current} onSealed={() => setRefreshKey((k) => k + 1)} />
-        <div className="stack">
-          <Book batch={current} refreshKey={refreshKey} />
-          <section className="panel">
-            <div className="panel-h">
-              <div className="tabs" role="group" aria-label="Lists">
-                <button aria-pressed={tab === "mine"} onClick={() => setTab("mine")}>Your orders</button>
-                <button aria-pressed={tab === "batches"} onClick={() => setTab("batches")}>Recent clears</button>
-              </div>
-              <Link to="/portfolio" className="btn sm ghost hide-sm">Portfolio</Link>
-            </div>
-            {tab === "mine" ? (
-              <Mine batches={withOrders.data} refreshKey={refreshKey} />
-            ) : (
-              <RecentClears batches={withOrders.data} />
-            )}
-          </section>
+          <b>tAVAX / tUSDC</b>
+          <small>Sealed batch auction · Ofel L1</small>
         </div>
       </div>
-    </div>
+      <div className="mb-cell">
+        <span>AVAX/USD <small>· Chainlink</small></span>
+        <b className="num" title={refErr}>{refPrice ? usd(refPrice.price, 3) : refErr ? "unavailable" : "…"}</b>
+      </div>
+      <div className={`mb-cell mb-now ${chg == null ? "" : chg >= 0 ? "up" : "down"}`}>
+        <span title={candles ? `${candles.source.name} ${candles.source.pair}` : undefined}>AVAX/USD <small>· {candles ? candles.source.name : "exchange"}</small></span>
+        <b className="num">
+          {last ? usd(last.c, 3) : "…"}
+          {chg != null && <small> {chg >= 0 ? "▲" : "▼"}{Math.abs(chg).toFixed(2)}%</small>}
+        </b>
+      </div>
+      <div className="mb-cell mb-beat">
+        <span>Last clear {lastClear && <small>· #{lastClear.batchId.toString()}</small>}</span>
+        <b className="num">{lastClear ? `${fix(lastClear.price)}` : "—"}<small className="mb-unit"> tUSDC</small></b>
+      </div>
+      <div className={`mb-cell mb-clock ${open && left < 15 ? "late" : ""}`} aria-label={open ? `${Math.floor(left)} seconds until batch ${current?.id} seals` : undefined}>
+        <span>{current ? `Batch #${current.id} ${open ? "seals in" : current.state === 1 ? "closing" : "opening next"}` : "Batch"}</span>
+        <b className="num" data-film="countdown">{l1Err ? "L1 offline" : current ? (open ? countdown(left) : "00:00") : "…"}</b>
+      </div>
+      <div className="mb-cell">
+        <span>Validators online</span>
+        <b className="num" title={valsErr}>{online !== undefined ? `${online}/${vals!.length}` : valsErr ? "retrying" : "…"}</b>
+      </div>
+      <div className="mb-mkts" role="radiogroup" aria-label="Candle interval">
+        {IVS.map((x) => (
+          <button key={x} role="radio" aria-checked={x === iv} className={x === iv ? "on" : ""} onClick={() => setIv(x)}>
+            {x}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
-function RecentClears({ batches }: { batches?: Batch[] }) {
-  const cleared = batches?.filter((b) => b.state === 3) ?? [];
-  if (!batches) return <div className="panel-b stack"><Skel /><Skel /></div>;
-  if (!cleared.length) return <Empty art="eclipse" title="No batch has cleared yet" />;
+/* ================================================================ chart */
+function ChartPanel({ iv, candles, candlesErr, rounds, clears, draft }: { iv: Interval; candles?: Awaited<ReturnType<typeof fetchCandles>>; candlesErr?: string; rounds: { ts: number; price: number; roundId: bigint }[]; clears: Clear[]; draft: TicketDraft }) {
+  const [hover, setHover] = useState<Ohlc | null>(null);
+  const k = candles?.candles ?? [];
+  const sel = hover ?? (k.at(-1) ? { t: k.at(-1)!.t, o: k.at(-1)!.o, h: k.at(-1)!.h, l: k.at(-1)!.l, c: k.at(-1)!.c } : null);
+  const limitLabel = draft.side === 1 ? "Your limit · buy" : "Your limit · sell";
   return (
-    <div className="tbl-wrap">
-      <table className="tbl">
-        <thead><tr><th>Batch</th><th className="r">Price</th><th className="r">Buy total</th><th className="r">Sell total</th><th className="r">Orders</th><th className="r">Cleared</th></tr></thead>
-        <tbody>
-          {cleared.map((b) => (
-            <tr key={b.id.toString()}>
-              <td><Link to={`/batches/${b.id}`}>#{b.id.toString()}</Link></td>
-              <td className="r num">{b.price > 0n ? <Amount v={b.price} /> : <span className="faint">no cross</span>}</td>
-              <td className="r num">{units(b.buyTotal)}</td>
-              <td className="r num">{units(b.sellTotal)}</td>
-              <td className="r num">{b.orderCount}</td>
-              <td className="r num muted">{utc(b.clearedAt)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <section className="pnl chartp" aria-label="Price chart" data-film="chart">
+      <header className="pnl-tabs">
+        <span className="pnl-tab on">AVAX / USD</span>
+        <span className="pnl-tab on sub">tAVAX / tUSDC</span>
+        {sel && (
+          <span className="ohlc mono hide-sm">
+            O {fix(sel.o, 3)} H {fix(sel.h, 3)} L {fix(sel.l, 3)} <b className={sel.c >= sel.o ? "up" : "down"}>C {fix(sel.c, 3)}</b>
+          </span>
+        )}
+        <span className="legend">
+          <i className="lg lg-candle" />
+          {candles ? candles.source.name : "Exchange"}
+          <i className="lg lg-link" />
+          Chainlink
+          <i className="lg lg-clear" />
+          Ofel clears
+          {draft.limit ? (
+            <>
+              <i className="lg lg-limit" />
+              Your limit
+            </>
+          ) : null}
+        </span>
+      </header>
+      <div className="chart-box">
+        {candles ? (
+          <DeskChart candles={k} sec={INTERVALS[iv]} rounds={rounds} clears={clears} limit={draft.limit} limitLabel={limitLabel} onHover={setHover} />
+        ) : candlesErr ? (
+          <div className="chart-wait">
+            <State kind="error" title="No exchange answered for AVAX candles">{candlesErr}. The sealed book and clears below are still live from the Ofel L1.</State>
+          </div>
+        ) : (
+          <div className="chart-wait">
+            <i className="pulse" /> Loading AVAX-USD {iv} candles…
+          </div>
+        )}
+      </div>
+      <p className="chart-foot mono">
+        Top: {candles ? <a href={candles.source.url} target="_blank" rel="noreferrer">{candles.source.name} {candles.source.pair}</a> : "exchange"} {iv} candles and{" "}
+        <a href={feedUrl} target="_blank" rel="noreferrer">Chainlink AVAX/USD on Fuji</a>. Bottom: tAVAX/tUSDC, the Ofel L1's test pair, at each batch's clearing price (BatchCleared on OfelBook).
+      </p>
+    </section>
   );
 }
+
+/* ================================================================ the sealed book */
+function BookPanel({ batch, prev, now, vals, refreshKey }: { batch?: Batch; prev?: Batch; now: number; vals?: ValidatorStatus[]; refreshKey: number }) {
+  const left = batch ? Number(batch.closeAt) - now : 0;
+  const isOpen = batch?.state === 1 && left > 0;
+  const rows = useLive(
+    async () => {
+      if (!batch) return [];
+      const [sealed, orders] = await Promise.all([getSealed(batch.id), getOrders(batch.id)]);
+      return sealed.map((s) => ({ ...s, order: orders[s.index] }));
+    },
+    [batch?.id, batch?.orderCount, refreshKey],
+    6000,
+  );
+  const [early, setEarly] = useState<EarlyAttempt & { batchId: bigint }>();
+  const [trying, setTrying] = useState(false);
+  useEffect(() => setEarly(undefined), [batch?.id]);
+  // The batch before this one: its close message is signed (or not) right now, by each validator.
+  const signed = useLive(async () => (prev && prev.state >= 2 && vals?.length ? checkSignatures(prev, vals) : undefined), [prev?.id, prev?.state, vals?.length], 20000);
+
+  return (
+    <section className="pnl bookp" aria-label="Sealed book" data-film="sealed-book">
+      <header className="pnl-tabs">
+        <span className="pnl-tab on">Sealed book</span>
+        <span className={`auto ${isOpen ? "on" : ""}`}>
+          <Icon name="lock" size={13} />
+          {batch ? `#${batch.id} · ${rows.data?.length ?? batch.orderCount} sealed` : "waiting"}
+        </span>
+      </header>
+      <div className="gp-body">
+        <div className="seal dark" data-film="seal-clock">
+          <div className="seal-row">
+            <div>
+              <span className="label">{batch ? (isOpen ? `Batch #${batch.id} seals in` : batch.state === 1 ? `Batch #${batch.id} is past its close` : `Batch #${batch.id}`) : "No batch open"}</span>
+              <b className="num">{batch ? (isOpen ? countdown(left) : "00:00") : "—"}</b>
+            </div>
+            <img src="/art/eclipse.webp" alt="" width={64} height={64} aria-hidden />
+          </div>
+          <p>
+            {batch ? <>Every order stays ciphertext until <b className="num">{utc(batch.closeAt)}</b>. Not us, not one validator: any {cfg.threshold} of {vals?.length ?? 3} sign it open after the close.</> : "The clearing agent opens a batch every 90 seconds."}
+          </p>
+        </div>
+
+        <div className="sec-h">
+          <b>What the chain sees</b>
+          <span className="dim small">sizes are commitments</span>
+        </div>
+        {rows.error && <State kind="error" title="Can't read the book">{rows.error}</State>}
+        {!rows.data && !rows.error && (
+          <div className="cipher-list">
+            <Skel h={36} />
+            <Skel h={36} />
+          </div>
+        )}
+        {rows.data && rows.data.length === 0 && (
+          <State kind="empty" art="empty" title={`No orders in #${batch?.id ?? "—"} yet`}>The first order lands here as ciphertext.</State>
+        )}
+        {rows.data && rows.data.length > 0 && (
+          <ol className="cipher-list" data-film="cipher-rows">
+            {rows.data.map((s) => (
+              <li key={s.tx}>
+                <span className="ci-idx mono">{s.index}</span>
+                <div className="ci-body">
+                  <code className="ci-hex">{s.envelope.slice(194, 194 + 44)}…</code>
+                  <span className="dim small">
+                    {short(s.trader)} · {((s.envelope.length - 2) / 2).toLocaleString()} B · size C {short("0x" + (s.order?.cx ?? 0n).toString(16), 4)}
+                  </span>
+                </div>
+                <span className={`st ${s.order?.status === 1 ? "st-live" : "st-won"}`}>
+                  <i />
+                  {s.order?.status === 1 ? "Sealed" : "Open"}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <button
+          className="btn btn-ghost btn-sm btn-block"
+          disabled={!batch || trying || !isOpen}
+          data-film="try-open"
+          onClick={async () => {
+            if (!batch) return;
+            setTrying(true);
+            try {
+              setEarly({ ...(await tryOpenEarly(batch)), batchId: batch.id });
+            } finally {
+              setTrying(false);
+            }
+          }}
+        >
+          <Icon name="unlock" size={15} />
+          {trying ? "Asking the chain and every validator…" : isOpen ? "Try to open it now" : "Opens at the close"}
+        </button>
+        {early && early.batchId === batch?.id && (
+          <div className="refused" role="status" data-film="refused">
+            <b>Refused. It can't be read before the close.</b>
+            <p>
+              <code>closeBatch(#{early.batchId.toString()})</code> {early.contract}
+            </p>
+            {early.validators.map((v) => (
+              <small key={v.nodeID} className="mono">
+                {short(v.nodeID, 5)} · {v.result}
+              </small>
+            ))}
+          </div>
+        )}
+
+        <div className="sec-h">
+          <b>Batch timeline</b>
+          <span className="dim small">#{batch?.id.toString() ?? "—"}</span>
+        </div>
+        <Timeline b={batch} now={now} />
+
+        <div className="sec-h">
+          <b>Validators signing</b>
+          <span className="dim small">{prev ? `close of #${prev.id}` : ""}</span>
+        </div>
+        <ul className="vals" data-film="validators-signing">
+          {(vals ?? []).map((v) => {
+            const c = signed.data?.checks.find((x) => x.nodeID === v.nodeID);
+            return (
+              <li key={v.nodeID}>
+                <i className={v.online ? "live" : "off"} />
+                <span className="mono">{short(v.nodeID, 5)}</span>
+                <span className={`small ${c?.ok ? "up" : "dim"}`}>
+                  {!v.online ? "offline" : c ? (c.ok ? "signed · BLS verified" : c.detail) : signed.error ? "can't ask" : prev && prev.state < 2 ? "waiting for the close" : "asking…"}
+                </span>
+                {c?.signature && <code className="sig hide-sm">{bytesToHex(c.signature).slice(0, 12)}…</code>}
+              </li>
+            );
+          })}
+          {!vals && <Skel h={28} />}
+        </ul>
+        <Link to={batch ? `/batches/${batch.id}` : "/batches"} className="link-row">
+          Batch #{batch?.id.toString() ?? "—"} in full <Icon name="arrow" size={14} />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+export function Timeline({ b, now, big = false }: { b?: Batch; now: number; big?: boolean }) {
+  const steps = useMemo(() => {
+    if (!b) return [];
+    const closed = b.state >= 2;
+    const cleared = b.state === 3;
+    const left = Number(b.closeAt) - now;
+    return [
+      { k: "Seal", t: b.state === 1 && left <= 0 ? "past T" : `${b.orderCount} order${b.orderCount === 1 ? "" : "s"}`, done: closed },
+      { k: "Warp", t: closed ? utc(b.closedAt).slice(0, 8) : "at T", done: closed },
+      { k: "Open", t: closed ? `${b.revealedCount}/${b.orderCount}` : "2 of 3", done: closed && (b.revealedCount > 0 || b.orderCount === 0 || cleared) },
+      { k: "Clear", t: cleared ? (b.price > 0n ? units(b.price) : "no cross") : "1 price", done: cleared },
+      { k: "Settle", t: cleared ? (b.price > 0n ? "eERC legs" : "bonds back") : "private", done: cleared && b.price > 0n },
+    ];
+  }, [b, now]);
+  const at = steps.findIndex((s) => !s.done);
+  return (
+    <ol className={`tline ${big ? "tline-big" : ""}`} data-film="timeline">
+      {steps.map((s, i) => (
+        <li key={s.k} className={s.done ? "done" : i === at ? "now" : ""}>
+          <i />
+          <b>{s.k}</b>
+          <span className="mono">{s.t}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+
