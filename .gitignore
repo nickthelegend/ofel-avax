@@ -15,3 +15,4 @@ playwright-report/
 test-results/
 dist-qa/
 .spike/
+web/public/circuits/

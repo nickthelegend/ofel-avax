@@ -4,6 +4,12 @@
   "type": "module",
   "dependencies": {
     "viem": "2.57.13",
-    "warplock": "workspace:*"
+    "warplock": "workspace:*",
+    "@ofel/core": "workspace:*",
+    "@noble/curves": "1.9.1",
+    "@avalabs/eerc-sdk": "1.0.2",
+    "react": "19.3.1",
+    "wagmi": "2.19.5",
+    "@tanstack/react-query": "5.105.0"
   }
 }

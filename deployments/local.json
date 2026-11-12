@@ -1,0 +1,23 @@
+{
+  "agent": "0x9107fE56C0e5F15b1183b27F1F2d92EB323b26cA",
+  "deployer": "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC",
+  "encryptedERC": "0x97C0FE6aB595cbFD50ad3860DA5B2017d8B35c2E",
+  "ofelBook": "0xCB5bf91D236ebe6eF6AE57342570884234bd11Cc",
+  "registrar": "0xB8a934dcb74d0E3d1DF6Bce0faC12cD8B18801eD",
+  "tAVAX": "0x8B3BC4270BE2abbB25BC04717830bd1Cc493a461",
+  "tUSDC": "0x7B4982e1F7ee384F206417Fb851a1EB143c513F9",
+  "network": "local",
+  "chainId": 77077,
+  "networkID": 1337,
+  "subnetID": "2W9boARgCWL25z6pMFNtkCfNA5v28VGg9PmBgUJfuKndEdhrvw",
+  "blockchainID": "2CE5f99WTiVBSG9JuMZQcnyxwDystgvk1CeevH5isLs7Bvap1w",
+  "blockchainIdHex": "0x9d2f5d4be0f35be39b6266cf28837cb0f6e659fdc33b1fd990dd933461a5db1f",
+  "warpPrecompile": "0x0200000000000000000000000000000000000005",
+  "threshold": 2,
+  "validatorURIs": [
+    "http://127.0.0.1:9654",
+    "http://127.0.0.1:9656",
+    "http://127.0.0.1:9658"
+  ],
+  "pchain": "http://127.0.0.1:9650/ext/bc/P"
+}
