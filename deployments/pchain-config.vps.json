@@ -1,0 +1,8 @@
+{
+  "block-cache-size": 16777216,
+  "tx-cache-size": 16777216,
+  "transformed-subnet-tx-cache-size": 1048576,
+  "fx-owner-cache-size": 1048576,
+  "subnet-to-l1-conversion-cache-size": 1048576,
+  "l1-inactive-validators-cache-size": 65536
+}

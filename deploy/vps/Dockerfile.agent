@@ -1,0 +1,17 @@
+# Ofel clearing agent (scripts/agent.ts) for the Fuji L1. Build context: a git archive of the ofel repo.
+# The agent key and L1 ids come from /opt/hk/ofel-l1/.env.agent (mode 600) at run time; the eERC circuits are mounted.
+FROM node:22-bookworm-slim
+RUN corepack enable && corepack prepare pnpm@10.29.2 --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/ofel/package.json packages/ofel/
+COPY packages/warplock/package.json packages/warplock/
+COPY scripts/package.json scripts/
+COPY web/package.json web/
+RUN pnpm install --frozen-lockfile --prod --filter "ofel-scripts..."
+COPY packages ./packages
+COPY scripts ./scripts
+COPY deployments ./deployments
+WORKDIR /app/scripts
+ENV NODE_ENV=production
+CMD ["node", "agent.ts"]

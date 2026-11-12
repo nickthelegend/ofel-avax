@@ -1,0 +1,11 @@
+**/node_modules
+.env
+.env.*
+.spike
+.loom
+contracts
+web/src
+web/public
+web/dist*
+docs
+**/*.log
