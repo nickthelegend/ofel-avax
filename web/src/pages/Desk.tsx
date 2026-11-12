@@ -309,7 +309,7 @@ function BookPanel({ batch, prev, now, vals, refreshKey }: { batch?: Batch; prev
                 <i className={v.online ? "live" : "off"} />
                 <span className="mono">{short(v.nodeID, 5)}</span>
                 <span className={`small ${c?.ok ? "up" : "dim"}`}>
-                  {!v.online ? "offline" : c ? (c.ok ? "signed · BLS verified" : c.detail) : signed.error ? "can't ask" : prev && prev.state < 2 ? "waiting for the close" : "asking…"}
+                  {!v.online ? "offline" : c ? (c.ok ? "signed · BLS verified" : c.detail.startsWith("refused") ? "not signed yet" : c.detail) : signed.error ? "can't ask" : prev && prev.state < 2 ? "waiting for the close" : "asking…"}
                 </span>
                 {c?.signature && <code className="sig hide-sm">{bytesToHex(c.signature).slice(0, 12)}…</code>}
               </li>
