@@ -41,6 +41,51 @@ in the Batches tab and off the chart and P&L.
 
 Phone: [docs/screens/desk-375.webp](docs/screens/desk-375.webp) · landing: [docs/screens/landing-1440.webp](docs/screens/landing-1440.webp)
 
+## Compared with other venues
+
+Ofel competes with on-chain order books and perps venues, AMMs and the private-trading designs. The landing's
+"Compared" section shows this table with the same sources. Every row is from the venue's own docs or published research,
+checked on Nov 14, 2026.
+
+| Venue | Your order before it fills | Your size after it fills | Who can peek, or whom you trust | Price | Sources |
+|---|---|---|---|---|---|
+| Hyperliquid (order book on its own L1) | Public book; open orders readable by address | Public: size, price and both addresses | Its validators; anyone reads the book | Continuous order book | [1] [2] |
+| dYdX v4 (order book appchain) | In every node's memory; public depth | Public trades feed | The block proposer (dYdX on MEV) | Continuous order book | [3] [4] |
+| Dexalot (order book on its own Avalanche L1) | On-chain order book | On-chain fills | Its L1's validators | Continuous order book | [5] [6] |
+| AMMs via a public mempool (Uniswap-style; LFJ on the C-Chain) | Pending swaps sit in the mempool | Public | Searchers can sandwich you | AMM curve | [7] [8] [9] |
+| CoW Protocol (batch auction of intents) | Seen by solvers and the order API | The Trade event logs the amounts | Bonded solvers | Uniform price per batch | [10] [11] [12] |
+| Shutter on Gnosis Chain (encrypted mempool; shuts down Nov 25, 2026) | Encrypted until inclusion | Decrypted and executed in the open | 4 of 7 keypers | Whatever app it feeds | [13] [14] [19] |
+| Renegade (dark pool, MPC + ZK) | Hidden from the public; your relayer sees it | Hidden for internal matches | Your relayer | Pegged to the Binance midpoint | [15] [16] |
+| Penumbra (shielded chain with a DEX) | Input amount burned publicly, identity shielded | Amounts public, not linked to you | No operator; sealed-bid swaps are "a future upgrade" | One price per block batch | [17] |
+| Railgun (private balances, swaps via public DEXs) | The swap leg hits a public DEX | Amount visible, not linked to you | Broadcasters; the DEX leg is exposed | The external DEX's | [18] |
+| **Ofel** | **Sealed until the close; opens only with 2 of 3 validator signatures** | **Never public: commitments, only totals** | 2 of 3 validators (today on one VPS); the clearing agent settles and audits | One price per batch | this repo |
+
+**Ofel's trade-offs, plainly.** The seal is 2 of 3: two colluding validators could sign the close early, and all three
+run on one VPS today, so in practice that is one operator. The clearing agent is trusted to settle the legs, submits
+totals (checked on-chain against the commitments) and holds the auditor key. Side and limit become public at the close
+so the price can be checked. Testnet only, and no on-chain range proof yet.
+
+Sources:
+[1] https://hyperliquid.gitbook.io/hyperliquid-docs/trading/order-book ·
+[2] https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint ·
+[3] https://docs.dydx.xyz/concepts/trading/limit-orderbook ·
+[4] https://www.dydx.xyz/blog/update-on-mev ·
+[5] https://github.com/Dexalot/contracts ·
+[6] https://www.avalanche.com/blog/dexalot-launches-first-central-limit-order-book-subnet-on-avalanche-with-1m-in-incentives ·
+[7] https://arxiv.org/abs/2009.14021 (Zhou et al., sandwich attacks) ·
+[8] https://build.avax.network/blog/p2p-network-anomalies (C-Chain mempool contents pulled over gossip) ·
+[9] https://github.com/lfj-gg/joe-docs (Liquidity Book is an AMM) ·
+[10] https://docs.cow.fi/cow-protocol/concepts/introduction/batch-auctions ·
+[11] https://raw.githubusercontent.com/cowprotocol/services/main/crates/orderbook/openapi.yml ·
+[12] https://raw.githubusercontent.com/cowprotocol/contracts/main/src/contracts/GPv2Settlement.sol ·
+[13] https://blog.shutter.network/shutterized-gnosis-chain-is-now-live/ ·
+[14] https://docs.shutter.network/docs/shutter/research/the_road_towards_an_encrypted_mempool_on_ethereum ·
+[15] https://docs.renegade.fi/concepts/privacy ·
+[16] https://docs.renegade.fi/concepts/mpc-zkp ·
+[17] https://protocol.penumbra.zone/main/dex/swap.html ·
+[18] https://docs.railgun.org/wiki/learn/railway-dex-swaps ·
+[19] https://blog.shutter.network/decommissioning-the-encrypted-mempool-on-gnosis-chain/
+
 ## How it works
 
 1. **The seal: warplock.** Each batch has a close time T. The trader's browser encrypts the order to the exact bytes of
@@ -137,7 +182,8 @@ exports C→P, imports, and spreads it with IncreaseL1ValidatorBalanceTx).
 
 **Explorers.** P-Chain txs and the L1 itself are on the Avalanche Explorer (links above); hub transfers are on Snowtrace.
 No hosted explorer indexes this L1's own EVM transactions (the Avalanche Explorer lists the L1 but not its blocks), so
-every L1 tx hash in this README and in `deployments/fuji-l1.json` is checked with
+the desk has its own explorer page, `https://ofel-desk.vercel.app/tx/<hash>`, which reads the public RPC and decodes the
+calldata and events with the contracts' ABIs (linked from every order row in Batches), and every L1 tx hash in this README and in `deployments/fuji-l1.json` is checked with
 `cast receipt <hash> --rpc-url https://ofel-v1.201-18-198-162.sslip.io/ext/bc/29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd/rpc`,
 and the desk's Batches page shows every order's raw transaction input.
 
