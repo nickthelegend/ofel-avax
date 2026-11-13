@@ -169,7 +169,8 @@ export interface SignatureCheck {
  *  re-syncing answers HTTP 503 ("not done bootstrapping"): that is "out of sync", not a refusal. */
 export function warpAnswer(m: string, notFound: string): string {
   if (/not found/i.test(m)) return notFound;
-  if (/HTTP 50[234]|bootstrapp|ECONN|Failed to fetch|timed? ?out/i.test(m)) return "no answer: node out of sync";
+  if (/bootstrapp/i.test(m)) return "no answer: node out of sync";
+  if (/HTTP 50[234]|ECONN|Failed to fetch|NetworkError|timed? ?out/i.test(m)) return "no answer: node offline";
   return `no answer: ${m.replace(/^.*?:\s*/, "").slice(0, 60)}`;
 }
 
