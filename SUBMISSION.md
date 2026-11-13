@@ -53,11 +53,12 @@ Fuji L1; Playwright for QA.
   No hosted explorer indexes the L1's own EVM txs; check them with `cast receipt` on that RPC, or on the desk's
   Batches pages.
 - **Repo:** (to be pushed by Nick).
-- **Demo video:** (link to be added after upload). Film: `grokbot/videos/ofel-avax/ofel-avax-film.mp4` (2:58, 1080p) and
-  `ofel-avax-film-share.mp4` (720p, 9.8 MB), v8 of round 3, recorded live on the hosted desk on Nov 13 (~02:00 UTC) from
-  a brand-new test wallet: batch #391 (our buy of 1,000 among 10 sealed orders) refused early by the contract and all
-  three validators, opened with 3 of 3 BLS signatures, cleared at 8.39 with public totals of 2,392 / 3,058 (no single
-  size shown), settled privately; `cast receipt` of the seal, the clear and the private payment from the L1 RPC; the
-  auditor (the clearing agent's key) reading sizes after the close; the ConvertSubnetToL1Tx and the L1's three
-  validators on Avalanche's explorer. Every version is kept in `videos/ofel-avax/versions/` (v1 = old desk), with the
+- **Demo video:** (link to be added after upload). Film: `grokbot/videos/ofel-avax/ofel-avax-film.mp4` (2:59, 1080p) and
+  `ofel-avax-film-share.mp4` (720p, 9.8 MB), v9 of round 3 (independent judge 9/10), recorded live on the hosted desk on
+  Nov 13 (~02:55 UTC) from a brand-new test wallet: batch #425 (our buy of 1,000 among 8 sealed orders) refused early by
+  the contract and all three validators; then validator 3 was switched off on purpose and the batch still opened with
+  2 of 3 BLS signatures; cleared at 8.22 with public totals of 1,939 / 2,639 (no single size shown); settled privately;
+  `cast receipt` of the seal, the clear and the private payment from the L1 RPC; the auditor (the clearing agent's key)
+  opening orders with 2 signatures after the close; the ConvertSubnetToL1Tx and the L1's three validators on
+  Avalanche's explorer. Every version is kept in `videos/ofel-avax/versions/` (v1 = old desk), with the
   independent judge's notes in `videos/ofel-avax/film/JUDGE-vN.md`.
