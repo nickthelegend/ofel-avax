@@ -123,5 +123,12 @@
     ],
     "judgeBondClaim": "0x97e0d7af2550f77be56dd6015f0b8815da781b64e5c6493ce42c899752da6811",
     "judgePrivateBalanceAfter": "3,000.00 tAVAX, 18,550.00 tUSDC (decrypted in the browser)"
+  },
+  "filmValidatorOutage": {
+    "note": "Film v9 (Nov 13): validator 3 (ofel-l1-v3-1, NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX) was stopped on purpose so batch #425 opened with 2 of 3 BLS signatures on camera, then restarted; it rejoined at the same head hash (block 1721, 0x92a1cf7c\u2026) as v1 and v2.",
+    "batch": 425,
+    "stoppedAt": "2026-11-13T02:54:28Z",
+    "startedAt": "2026-11-13T02:56:09Z",
+    "rejoinedCheckedAt": "2026-11-13T02:59:35Z"
   }
 }
