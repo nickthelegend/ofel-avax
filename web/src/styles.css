@@ -1074,3 +1074,7 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
 .txp-note b { color: #f0b9a0; }
 @media (max-width: 640px) { .txp-note { flex-direction: column; align-items: flex-start; } }
 @media (max-width: 640px) { .pb-head { flex-wrap: wrap; padding-right: 96px; } }
+/* the illustration label sits inside the public-book panel, so it is on screen whenever the panel is */
+.pb .illus { left: auto; top: auto; right: 14px; bottom: 12px; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line-2); color: var(--muted); }
+.pb .pb-cap { padding-right: 190px; }
+@media (max-width: 640px) { .pb .pb-cap { padding-right: 0; padding-bottom: 26px; } }
