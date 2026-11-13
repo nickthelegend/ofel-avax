@@ -223,7 +223,7 @@ function BookPanel({ batch, prev, now, vals, refreshKey }: { batch?: Batch; prev
             <img src="/art/eclipse.webp" alt="" width={64} height={64} aria-hidden />
           </div>
           <p>
-            {batch ? <>Every order stays ciphertext until <b className="num">{utc(batch.closeAt)}</b>. Not us, not one validator: any {cfg.threshold} of {vals?.length ?? 3} sign it open after the close.</> : "The clearing agent opens a batch every 90 seconds."}
+            {batch ? <>Every order stays ciphertext until <b className="num">{utc(batch.closeAt)}</b>. No single validator can open it: any {cfg.threshold} of {vals?.length ?? 3} sign it open, after the close.</> : "The clearing agent opens a batch every 90 seconds."}
           </p>
         </div>
 
