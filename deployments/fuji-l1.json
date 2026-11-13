@@ -1,134 +1,143 @@
 {
-  "agent": "0x37727D010AEd8BFACD98A5D4D4C635cB20eDB4e8",
-  "deployer": "0x5Cc9CBB73d65Eb832342E788929294CD8237148f",
-  "encryptedERC": "0xaE10f3005c359cf6C68eaE6a245DcC4CF100DA21",
-  "ofelBook": "0x40Fb0a21A8736d3cE05008D33888FE207975D5aB",
-  "registrar": "0x3f6085124eC68Ea1BAD105b61c046d68F59B087F",
-  "tAVAX": "0xc79eb2e7e25d053968d871f65f4bB5bD1Ddf7476",
-  "tUSDC": "0xbAB44432a831383387eE19AaE227ae937CB020E7",
-  "network": "fuji-l1",
-  "chainId": 77077,
-  "networkID": 5,
-  "subnetID": "soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt",
-  "blockchainID": "29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd",
-  "blockchainIdHex": "0x977b8ab415efa008ec3a2944d3a7be3ce0d9c16be175ab1e758bbdda6c349c16",
-  "warpPrecompile": "0x0200000000000000000000000000000000000005",
-  "threshold": 2,
-  "validatorURIs": [
-    "https://ofel-v1.201-18-198-162.sslip.io",
-    "https://ofel-v2.201-18-198-162.sslip.io",
-    "https://ofel-v3.201-18-198-162.sslip.io"
-  ],
-  "pchain": "https://api.avax-test.network/ext/bc/P",
-  "bondWei": "100000000000000000",
-  "revealWindowS": 120,
-  "settleWindowS": 900,
-  "faucet": "0x9aF7eCC1dfD160556b7542A0eA4b37adeC0E0dDC",
-  "faucetOperator": "0x4A566B473E4b59B5a426540aea042DaE5b249b57",
-  "faucetDrip": {
-    "OFEL": "5",
-    "tAVAX": "2000",
-    "tUSDC": "50000",
-    "stockedFor": 200
-  },
-  "house": "0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81",
-  "houseQuote": {
-    "source": "Chainlink AVAX/USD on Fuji (0x5498BB86BC934c8D34FDA08E81D444153d0D06aD)",
-    "spreadBps": 15,
-    "sizeTAVAX": "1000",
-    "pricedFromBatch": "210",
-    "since": "2026-11-12T20:51Z",
-    "before": {
-      "bid": "31.30",
-      "ask": "31.40",
-      "note": "fixed quote used by batches 1-209"
-    }
-  },
-  "api": "https://ofel-api.201-18-198-162.sslip.io",
-  "e2e": {
-    "startedAt": "2026-11-12T15:22:32.695Z",
-    "batchSeconds": 45,
-    "batchA": {
-      "batchId": "2",
-      "orders": [
-        "0xb764859421ebd9ee46ae7daa6bec6165912b5b054f88cc1b125f5f37f3c61301",
-        "0xf53d6d1b7e56ac722b5d94e909ab123442d40326bbc5f7dc300a5a2a1d93720c"
-      ],
-      "cleared": {
-        "price": "3135",
-        "buyTotal": "125000",
-        "sellTotal": "90000"
-      },
-      "payIns": [
-        "0x3e235ca9acef4d6ad578e549463b59ff609ad927a31878d2b1230ec2c0d85abe",
-        "0x997835b84556d7e2c465f5b7c48c5cb8590ebb68a6ce393c2494a6ad9607923f"
-      ],
-      "payouts": [
-        "0x311c2d380d387fdb5fdee7c080d172cc9618ec63eeed820ecdf0c5ccf854c8f7",
-        "0x896a0a12aeb3d0af3b0567a2083fde4b5af2398449bd6f5ddf7b4f0cf7d89cc3"
-      ],
-      "bondClaims": [
-        "0xa1df3323111844780bf21590768128697f5f6f1821b76762dd5505ef75490877",
-        "0xcfe4ce05315a17c04f911829e802d8dc12f0c4555bc725537b962669c8d0fe6e"
-      ]
-    },
-    "validatorStopped": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
-    "batchB": {
-      "batchId": "3",
-      "orders": [
-        "0xc491e20cdb1109b6074352efb0119bcc216733d0e8d8040b6649e89bbb37faf2",
-        "0xd9aa0c3c3d97fd6a3f7f4d50029d93859dc331d64f724ffece5eb13c96e706fe"
-      ],
-      "cleared": {
-        "price": "3135",
-        "buyTotal": "125000",
-        "sellTotal": "90000"
-      },
-      "payIns": [
-        "0x69cb75470a22de8bd944e2d057677dc14646379cdb71b3b627c1e27cf6072c2b",
-        "0x499d187c90e360bfa69e05dbfa7983b6b8c7d26525d5e8fa90d24fc004f2c896"
-      ],
-      "payouts": [
-        "0x3e7d8e07ace347ddc062172f6d16eec7506379aa806434308dce9541485295e3",
-        "0x7af59baef7758a051f8f9969ecb87efafbfd21d389dc84933a1caefd55dd4d29"
-      ],
-      "bondClaims": [
-        "0xcf9675dcd712f2c2f73a05a70d2172d79fe7f1c71dd85d7f6acb312174e9c47c",
-        "0xe4f61412c137f87ce287162d04d1f07d4cc3350a48d721e8492f265e69d3af46"
-      ]
-    },
-    "checks": 31,
-    "finishedAt": "2026-11-12T15:26:19.609Z"
-  },
-  "hostedJudgeRun": {
-    "at": "2026-11-12T15:28Z",
-    "desk": "https://ofel-desk.vercel.app",
-    "wallet": "0x45839321824F7A8aE120B327AEC2Da4f75C810DD (fresh \"Test wallet\" made in the browser)",
-    "faucetDrip": "0xc43f4284b98d3c771ab7e7c7e6070767c828631549cbf27b1f6e759ef03baa5e",
-    "batchId": "6",
-    "sealBuy": "0x2d5c2cfb21bb2202336b206439fc4578218c4bae1e75636a9059906dc1c975ae",
-    "houseBid": "0x3277d307ac8db5ddcf075d3b88fca7de239d8ddd92e60f3af7d4d7e3dcbb10dc",
-    "houseAsk": "0x9809a625d7f377794a20812be6dcd6e0e678c325eee48cab743d0d25c938eb2a",
-    "clear": "0x6d480072fddf3a4ceb33b0da80f07cfadb260b391d00871b2b21e851d1f0737e",
-    "price": "31.45",
-    "filledTAVAX": "1000 of 1250 (pro rata)",
-    "signatures": "3/3",
-    "judgePayIn": "0xc6a3ee9c714633308d8437f103afbe2681f0fa07ec3b2866e4dea15d1ca6f64a",
-    "housePayIn": "0x0c55d0a993baf547287847d98518df270de401310d38ae97526dd92e93635fea",
-    "payoutToJudge": "0x312c663dd1279352a77cc7653ddf409b561f5d76c93361d748817f82c47345ba",
-    "payoutToHouse": "0x805f9e673699d457b24a02c8b6ec87ac6c62cc9bda16bbaeffa538bd9288d2e9",
-    "markSettled": [
-      "0x771d43acf938e53352259413daff52e2fe94e34fe9ed5508a8997093576c1c43",
-      "0x1a13f270b1bc8da1440e49b214fb55792441388264c97b633a27ed2d4757d0c3"
-    ],
-    "judgeBondClaim": "0x97e0d7af2550f77be56dd6015f0b8815da781b64e5c6493ce42c899752da6811",
-    "judgePrivateBalanceAfter": "3,000.00 tAVAX, 18,550.00 tUSDC (decrypted in the browser)"
-  },
-  "filmValidatorOutage": {
-    "note": "Film v9 (Nov 13): validator 3 (ofel-l1-v3-1, NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX) was stopped on purpose so batch #425 opened with 2 of 3 BLS signatures on camera, then restarted; it rejoined at the same head hash (block 1721, 0x92a1cf7c\u2026) as v1 and v2.",
-    "batch": 425,
-    "stoppedAt": "2026-11-13T02:54:28Z",
-    "startedAt": "2026-11-13T02:56:09Z",
-    "rejoinedCheckedAt": "2026-11-13T02:59:35Z"
+ "agent": "0x37727D010AEd8BFACD98A5D4D4C635cB20eDB4e8",
+ "deployer": "0x5Cc9CBB73d65Eb832342E788929294CD8237148f",
+ "encryptedERC": "0xaE10f3005c359cf6C68eaE6a245DcC4CF100DA21",
+ "ofelBook": "0x40Fb0a21A8736d3cE05008D33888FE207975D5aB",
+ "registrar": "0x3f6085124eC68Ea1BAD105b61c046d68F59B087F",
+ "tAVAX": "0xc79eb2e7e25d053968d871f65f4bB5bD1Ddf7476",
+ "tUSDC": "0xbAB44432a831383387eE19AaE227ae937CB020E7",
+ "network": "fuji-l1",
+ "chainId": 77077,
+ "networkID": 5,
+ "subnetID": "soDva7N79urhP1jb4SM8Av8XcmDQgnpfGTLjqdx8mnYDVXMKt",
+ "blockchainID": "29iRKcsUXYnLp4EFt2SAgKjn4AHFd8i7DS8CwXoeQ2mFHkL4pd",
+ "blockchainIdHex": "0x977b8ab415efa008ec3a2944d3a7be3ce0d9c16be175ab1e758bbdda6c349c16",
+ "warpPrecompile": "0x0200000000000000000000000000000000000005",
+ "threshold": 2,
+ "validatorURIs": [
+  "https://ofel-v1.201-18-198-162.sslip.io",
+  "https://ofel-v2.201-18-198-162.sslip.io",
+  "https://ofel-v3.201-18-198-162.sslip.io"
+ ],
+ "pchain": "https://api.avax-test.network/ext/bc/P",
+ "bondWei": "100000000000000000",
+ "revealWindowS": 120,
+ "settleWindowS": 900,
+ "faucet": "0x9aF7eCC1dfD160556b7542A0eA4b37adeC0E0dDC",
+ "faucetOperator": "0x4A566B473E4b59B5a426540aea042DaE5b249b57",
+ "faucetDrip": {
+  "OFEL": "5",
+  "tAVAX": "2000",
+  "tUSDC": "50000",
+  "stockedFor": 200
+ },
+ "house": "0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81",
+ "houseQuote": {
+  "source": "Chainlink AVAX/USD on Fuji (0x5498BB86BC934c8D34FDA08E81D444153d0D06aD)",
+  "spreadBps": 15,
+  "sizeTAVAX": "1000",
+  "pricedFromBatch": "210",
+  "since": "2026-11-12T20:51Z",
+  "before": {
+   "bid": "31.30",
+   "ask": "31.40",
+   "note": "fixed quote used by batches 1-209"
   }
+ },
+ "api": "https://ofel-api.201-18-198-162.sslip.io",
+ "e2e": {
+  "startedAt": "2026-11-12T15:22:32.695Z",
+  "batchSeconds": 45,
+  "batchA": {
+   "batchId": "2",
+   "orders": [
+    "0xb764859421ebd9ee46ae7daa6bec6165912b5b054f88cc1b125f5f37f3c61301",
+    "0xf53d6d1b7e56ac722b5d94e909ab123442d40326bbc5f7dc300a5a2a1d93720c"
+   ],
+   "cleared": {
+    "price": "3135",
+    "buyTotal": "125000",
+    "sellTotal": "90000"
+   },
+   "payIns": [
+    "0x3e235ca9acef4d6ad578e549463b59ff609ad927a31878d2b1230ec2c0d85abe",
+    "0x997835b84556d7e2c465f5b7c48c5cb8590ebb68a6ce393c2494a6ad9607923f"
+   ],
+   "payouts": [
+    "0x311c2d380d387fdb5fdee7c080d172cc9618ec63eeed820ecdf0c5ccf854c8f7",
+    "0x896a0a12aeb3d0af3b0567a2083fde4b5af2398449bd6f5ddf7b4f0cf7d89cc3"
+   ],
+   "bondClaims": [
+    "0xa1df3323111844780bf21590768128697f5f6f1821b76762dd5505ef75490877",
+    "0xcfe4ce05315a17c04f911829e802d8dc12f0c4555bc725537b962669c8d0fe6e"
+   ]
+  },
+  "validatorStopped": "NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX",
+  "batchB": {
+   "batchId": "3",
+   "orders": [
+    "0xc491e20cdb1109b6074352efb0119bcc216733d0e8d8040b6649e89bbb37faf2",
+    "0xd9aa0c3c3d97fd6a3f7f4d50029d93859dc331d64f724ffece5eb13c96e706fe"
+   ],
+   "cleared": {
+    "price": "3135",
+    "buyTotal": "125000",
+    "sellTotal": "90000"
+   },
+   "payIns": [
+    "0x69cb75470a22de8bd944e2d057677dc14646379cdb71b3b627c1e27cf6072c2b",
+    "0x499d187c90e360bfa69e05dbfa7983b6b8c7d26525d5e8fa90d24fc004f2c896"
+   ],
+   "payouts": [
+    "0x3e7d8e07ace347ddc062172f6d16eec7506379aa806434308dce9541485295e3",
+    "0x7af59baef7758a051f8f9969ecb87efafbfd21d389dc84933a1caefd55dd4d29"
+   ],
+   "bondClaims": [
+    "0xcf9675dcd712f2c2f73a05a70d2172d79fe7f1c71dd85d7f6acb312174e9c47c",
+    "0xe4f61412c137f87ce287162d04d1f07d4cc3350a48d721e8492f265e69d3af46"
+   ]
+  },
+  "checks": 31,
+  "finishedAt": "2026-11-12T15:26:19.609Z"
+ },
+ "hostedJudgeRun": {
+  "at": "2026-11-12T15:28Z",
+  "desk": "https://ofel-desk.vercel.app",
+  "wallet": "0x45839321824F7A8aE120B327AEC2Da4f75C810DD (fresh \"Test wallet\" made in the browser)",
+  "faucetDrip": "0xc43f4284b98d3c771ab7e7c7e6070767c828631549cbf27b1f6e759ef03baa5e",
+  "batchId": "6",
+  "sealBuy": "0x2d5c2cfb21bb2202336b206439fc4578218c4bae1e75636a9059906dc1c975ae",
+  "houseBid": "0x3277d307ac8db5ddcf075d3b88fca7de239d8ddd92e60f3af7d4d7e3dcbb10dc",
+  "houseAsk": "0x9809a625d7f377794a20812be6dcd6e0e678c325eee48cab743d0d25c938eb2a",
+  "clear": "0x6d480072fddf3a4ceb33b0da80f07cfadb260b391d00871b2b21e851d1f0737e",
+  "price": "31.45",
+  "filledTAVAX": "1000 of 1250 (pro rata)",
+  "signatures": "3/3",
+  "judgePayIn": "0xc6a3ee9c714633308d8437f103afbe2681f0fa07ec3b2866e4dea15d1ca6f64a",
+  "housePayIn": "0x0c55d0a993baf547287847d98518df270de401310d38ae97526dd92e93635fea",
+  "payoutToJudge": "0x312c663dd1279352a77cc7653ddf409b561f5d76c93361d748817f82c47345ba",
+  "payoutToHouse": "0x805f9e673699d457b24a02c8b6ec87ac6c62cc9bda16bbaeffa538bd9288d2e9",
+  "markSettled": [
+   "0x771d43acf938e53352259413daff52e2fe94e34fe9ed5508a8997093576c1c43",
+   "0x1a13f270b1bc8da1440e49b214fb55792441388264c97b633a27ed2d4757d0c3"
+  ],
+  "judgeBondClaim": "0x97e0d7af2550f77be56dd6015f0b8815da781b64e5c6493ce42c899752da6811",
+  "judgePrivateBalanceAfter": "3,000.00 tAVAX, 18,550.00 tUSDC (decrypted in the browser)"
+ },
+ "filmValidatorOutage": {
+  "note": "Film v9 (Nov 13): validator 3 (ofel-l1-v3-1, NodeID-9by3D2T4Kh2XrDKmwt1kAaksZdqwvWEJX) was stopped on purpose so batch #425 opened with 2 of 3 BLS signatures on camera, then restarted; it rejoined at the same head hash (block 1721, 0x92a1cf7c…) as v1 and v2.",
+  "batch": 425,
+  "stoppedAt": "2026-11-13T02:54:28Z",
+  "startedAt": "2026-11-13T02:56:09Z",
+  "rejoinedCheckedAt": "2026-11-13T02:59:35Z"
+ },
+ "filmV10Run": {
+  "note": "Film v10 (Nov 13, ~22:24-22:29 UTC), one live take from a brand-new test wallet on https://ofel-desk.vercel.app: batch #1165 (10 sealed orders), refused early by the contract and all 3 validators; validator 3 (ofel-l1-v3-1) stopped on purpose before the close, so the batch opened with 2 of 3 BLS signatures; cleared at 8.21 with public totals 1,198 / 1,904; our 1,000 buy paid in privately (eERC) and settled. v3 rejoined at the same head hash as v1 and v2 (block 4005, 0x3fe4c88e...). An earlier take the same night (batch #1157) stopped at the pay step and was discarded; its order stayed unpaid.",
+  "batch": 1165,
+  "sealTx": "0x8f54185ac93ef6c922b56421565cfe4007b83a3834d5531ebf14abfbfc9f77ff",
+  "clearTx": "0xa06294cc0ce33207abfb950ce1800ad9d790ba1a58c1ab41e55d7ee6da0ac062",
+  "payTx": "0x3f9888034a705f9583a8623a1134c67ed0dfe6527b96b60433ee00603ab5ad6d",
+  "validator3StoppedAt": "2026-11-13T22:25:45Z",
+  "validator3StartedAt": "2026-11-13T22:27:33Z"
+ }
 }
