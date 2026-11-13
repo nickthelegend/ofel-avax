@@ -15,6 +15,11 @@ import { Ticket, type TicketDraft } from "../components/Ticket";
 import { DeskTabs } from "../components/DeskTabs";
 import { Hash, Icon, Link, Pair, Skel, State, useMedia } from "../components/ui";
 
+// Where the AES-GCM ciphertext starts in a stored envelope, in hex chars: "0x", the ABI head (64 bytes) and length word
+// (32), then warplock's 3-byte head, 3 key shares of 133 bytes and the 12-byte IV. Previewing from here shows bytes that
+// differ per order (the start of every envelope is the same header and validator IDs).
+const CT_HEX = 2 + 2 * (96 + 3 + 3 * 133 + 12);
+
 const IVS: Interval[] = ["1m", "5m", "15m", "1h"];
 
 export function Desk() {
@@ -23,7 +28,7 @@ export function Desk() {
   const batches = useLive(() => recentBatches(12), [], 3000);
   const current = batches.data?.[0];
   const vals = useLive(validatorStatus, [], 8000);
-  const allClears = useLive(ofelClears, [current?.id, current?.state], 20000);
+  const allClears = useLive(ofelClears, [current?.id, current?.state], 5000);
   const clears = { data: allClears.data?.filter(priced), error: allClears.error };
   const ref = useLive(() => chainlinkAvax(24), [], 60000);
   const [iv, setIv] = useState<Interval>(() => {
@@ -33,7 +38,7 @@ export function Desk() {
       return "5m";
     }
   });
-  const candles = useLive(() => fetchCandles("AVAX", iv, 300), [iv], 20000);
+  const candles = useLive(() => fetchCandles("AVAX", iv, 300), [iv], 10000);
   const [draft, setDraft] = useState<TicketDraft>({ side: 1, limit: null });
   const [refreshKey, setRefreshKey] = useState(0);
   const lastClear = clears.data?.at(-1);
@@ -247,7 +252,7 @@ function BookPanel({ batch, prev, now, vals, refreshKey }: { batch?: Batch; prev
               <li key={s.tx}>
                 <span className="ci-idx mono">{s.index}</span>
                 <div className="ci-body">
-                  <code className="ci-hex">{s.envelope.slice(194, 194 + 44)}…</code>
+                  <code className="ci-hex">{s.envelope.slice(CT_HEX, CT_HEX + 44)}…</code>
                   <span className="dim small">
                     {short(s.trader)} · {((s.envelope.length - 2) / 2).toLocaleString()} B · size C {short("0x" + (s.order?.cx ?? 0n).toString(16), 4)}
                   </span>

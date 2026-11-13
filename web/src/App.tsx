@@ -44,7 +44,7 @@ function WalletButton() {
         <button className="addr-pill" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" data-film="wallet">
           <img className="avatar" src="/art/key.webp" alt="" width={26} height={26} />
           <span className="mono">{short(w.address)}</span>
-          <span className="dim hide-sm">{w.isTest ? "test wallet" : w.isAgent ? "auditor" : ""}</span>
+          <span className="dim hide-sm">{w.isTest ? (w.address.toLowerCase() === cfg.agent.toLowerCase() ? "auditor key" : "test wallet") : w.isAgent ? "auditor" : ""}</span>
         </button>
       ) : (
         <button className="btn btn-primary btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" data-film="connect">
