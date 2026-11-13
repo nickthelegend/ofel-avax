@@ -199,7 +199,7 @@ function Detail({ id }: { id: bigint }) {
                         <td>{o.side ? <span className={`spill spill-${o.side === BUY ? "up" : "down"}`}><Icon name={o.side === BUY ? "up" : "down"} size={12} />{o.side === BUY ? "Buy" : "Sell"}</span> : <span className="dim">sealed</span>}</td>
                         <td className="mono">{o.side ? units(o.limit) : <span className="dim">sealed</span>}</td>
                         <td><code className="ci-hex" title={`C = (${o.cx}, ${o.cy})`}>C {short("0x" + o.cx.toString(16), 4)}</code></td>
-                        <td className="hide-sm">{tx ? <button className="btn btn-ghost btn-xs" onClick={() => setRawOpen(rawOpen === tx ? undefined : tx)}>{rawOpen === tx ? "Hide" : "Raw input"}</button> : "—"}</td>
+                        <td className="hide-sm">{tx ? <span className="links"><button className="btn btn-ghost btn-xs" onClick={() => setRawOpen(rawOpen === tx ? undefined : tx)}>{rawOpen === tx ? "Hide" : "Raw input"}</button><Link className="btn btn-ghost btn-xs" to={`/tx/${tx}`}>Explorer</Link></span> : "—"}</td>
                         <td><StatusPill s={o.status} /></td>
                       </tr>
                     );

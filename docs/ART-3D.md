@@ -18,3 +18,11 @@ padded square and under 75 KB; every `<img>` has width and height.
 Files: `web/public/art/<name>.webp` (640 px, transparent).
 
 3D art generated with ChatGPT
+
+Film round (Nov 14), same style line, one fresh ChatGPT chat in Nick's Chrome: **exposed** (a clear glass envelope with
+its coins in plain view under a spotlight, worried eyes; the public-book side of "Why sealed"), **vault** (an obsidian
+chain block holding a sealed envelope; "the chain stores ciphertext"), **orb** (a sealed obsidian orb, closed eyes; a
+commitment, "Who sees what"), **receipt** (an obsidian receipt with a first-light check; the live receipt panel),
+**node** (an obsidian server node with an antenna; the public RPC panel) and **ladder** (a public order book as clear
+glass depth bars with coins on each, worried eyes; "Compared"). The first ladder came back with a painted checkerboard
+instead of transparency and was regenerated. Same processing: trimmed, padded square, 640 px WebP under 75 KB.

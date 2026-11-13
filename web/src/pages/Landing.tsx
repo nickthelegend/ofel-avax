@@ -9,6 +9,7 @@ import { chainlinkAvax, fix, ofelClears, priced, usd } from "../lib/market";
 import { DeskChart } from "../components/CandleChart";
 import { Ext, Hash, Icon, Link, Logo, Pair } from "../components/ui";
 import fujiStatus from "../../../deployments/fuji.json";
+import { Anatomy, Compare, Problem, ProofPanels } from "../components/LandingSections";
 
 const Art = ({ src, className }: { src: string; className?: string }) => (
   <div className={`art ${className ?? ""}`} aria-hidden="true">
@@ -115,8 +116,9 @@ export function Landing() {
         <header className="l-nav">
           <Logo />
           <nav aria-label="Primary" className="l-links">
-            <a href="#how">How it works</a>
-            <a href="#who">Who sees what</a>
+            <a href="#why">Why sealed</a>
+            <a href="#seal">How it works</a>
+            <a href="#compare">Compared</a>
             <a href="#proof">Proof</a>
             <Link to="/batches">Batches</Link>
           </nav>
@@ -149,6 +151,8 @@ export function Landing() {
       </div>
 
       <main id="main" className="l-main">
+        <Problem />
+
         <section className="trust" aria-label="Where the data comes from">
           <img src="/art/proof.webp" alt="" aria-hidden className="trust-seal" width={56} height={56} />
           <div className="trust-title">
@@ -245,10 +249,17 @@ export function Landing() {
           </article>
         </section>
 
+        <Anatomy />
+
         <section className="l-sec" id="who">
-          <header className="l-head">
-            <p className="kicker">Who sees what</p>
-            <h2>Private where it protects you. Public where it proves the price.</h2>
+          <header className="l-head cmp-head">
+            <div>
+              <p className="kicker">Who sees what</p>
+              <h2>Private where it protects you. Public where it proves the price.</h2>
+            </div>
+            <div className="cmp-art" aria-hidden="true">
+              <img src="/art/orb.webp" alt="" width={640} height={640} />
+            </div>
           </header>
           <div className="pnl">
             <div className="tbl-wrap">
@@ -277,11 +288,14 @@ export function Landing() {
           </div>
         </section>
 
+        <Compare />
+
         <section className="l-sec" id="proof">
           <header className="l-head">
             <p className="kicker">Check it yourself</p>
-            <h2>One L1, three validators, every contract on screen.</h2>
+            <h2>Don't trust this page. Ask the chain.</h2>
           </header>
+          <ProofPanels />
           <div className="runlist">
             <p className="runlist-h">Ofel L1 · chain {cfg.chainId} · Warp on</p>
             <ol>
