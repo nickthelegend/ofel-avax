@@ -1078,3 +1078,10 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
 .pb .illus { left: auto; top: auto; right: 14px; bottom: 12px; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line-2); color: var(--muted); }
 .pb .pb-cap { padding-right: 190px; }
 @media (max-width: 640px) { .pb .pb-cap { padding-right: 0; padding-bottom: 26px; } }
+/* the byte map's walk-through: the named part glows, the rest steps back */
+.emap .emap-seg, .emap .emap-legend li { transition: opacity .45s var(--ease), box-shadow .45s var(--ease), transform .45s var(--ease); }
+.emap[data-step="1"] .emap-seg:not(.emap-share), .emap[data-step="1"] .emap-legend li:not(.emap-share),
+.emap[data-step="2"] .emap-seg:not(.emap-ct), .emap[data-step="2"] .emap-legend li:not(.emap-ct),
+.emap[data-step="3"] .emap-seg:not(.emap-mine), .emap[data-step="3"] .emap-legend li:not(.emap-mine),
+.emap[data-step="4"] .emap-seg, .emap[data-step="4"] .emap-legend li:not(.emap-c) { opacity: .28; }
+.emap[data-step="1"] .emap-share, .emap[data-step="2"] .emap-ct, .emap[data-step="3"] .emap-mine, .emap[data-step="4"] li.emap-c { box-shadow: 0 0 0 2px #f0b9a0, 0 0 28px rgba(240, 185, 160, .45); transform: translateY(-2px); }

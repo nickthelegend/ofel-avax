@@ -146,7 +146,25 @@ export function Problem() {
 
 // ------------------------------------------------------------------------------------------------ 2. anatomy of a sealed order
 /** One real sealed order, byte by byte: what OfelBook stores. Computed from the envelope read off the L1. */
+// The map walks through its parts once it is on screen (key shares, the encrypted order, your copy, the size
+// commitment), then shows them all together; it loops while in view and stays still under reduced motion.
+const EMAP_STEPS: [number, number][] = [[0, 2600], [1, 2000], [2, 1700], [3, 1500], [4, 2600], [0, 4200]];
+function useEmapStep() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    if (!ref.current || useReduced()) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const run = (i: number) => { setStep(EMAP_STEPS[i][0]); t = setTimeout(() => run((i + 1) % EMAP_STEPS.length), EMAP_STEPS[i][1]); };
+    const io = new IntersectionObserver(([e]) => { clearTimeout(t); setStep(0); if (e.isIntersecting) run(0); }, { threshold: 0.6 });
+    io.observe(ref.current);
+    return () => { io.disconnect(); clearTimeout(t); };
+  }, []);
+  return { ref, step };
+}
+
 function EnvelopeMap({ env, c, batch }: { env: Hex; c?: Hex; batch: bigint }) {
+  const { ref, step } = useEmapStep();
   let parts: { k: string; n: number; t: string; d: string; hex?: string }[] = [];
   try {
     const { timelocked, mine } = splitEnvelope(env);
@@ -162,7 +180,7 @@ function EnvelopeMap({ env, c, batch }: { env: Hex; c?: Hex; batch: bigint }) {
   }
   const total = parts.reduce((s, p) => s + p.n, 0);
   return (
-    <div className="emap" data-film="envelope-map">
+    <div className="emap" data-film="envelope-map" ref={ref} data-step={step}>
       <div className="emap-head">
         <span className="label">Inside one sealed order · batch #{batch.toString()} · read live from OfelBook</span>
         <b className="num">{bytesOf(env).toLocaleString("en-US")} bytes, none of them readable before the close</b>
