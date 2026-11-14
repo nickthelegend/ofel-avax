@@ -148,12 +148,13 @@ export function Problem() {
 /** One real sealed order, byte by byte: what OfelBook stores. Computed from the envelope read off the L1. */
 // The map walks through its parts once it is on screen (key shares, the encrypted order, your copy, the size
 // commitment), then shows them all together; it loops while in view and stays still under reduced motion.
-const EMAP_STEPS: [number, number][] = [[0, 2600], [1, 2000], [2, 1700], [3, 1500], [4, 2600], [0, 4200]];
+const EMAP_STEPS: [number, number][] = [[0, 2200], [1, 2400], [2, 1900], [3, 1700], [4, 2600], [0, 4200]];
 function useEmapStep() {
   const ref = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
   useEffect(() => {
-    if (!ref.current || useReduced()) return;
+    // a film recorder sets window.__ofelFilm and steps the map itself, in time with its narration
+    if (!ref.current || useReduced() || (window as unknown as { __ofelFilm?: boolean }).__ofelFilm) return;
     let t: ReturnType<typeof setTimeout> | undefined;
     const run = (i: number) => { setStep(EMAP_STEPS[i][0]); t = setTimeout(() => run((i + 1) % EMAP_STEPS.length), EMAP_STEPS[i][1]); };
     const io = new IntersectionObserver(([e]) => { clearTimeout(t); setStep(0); if (e.isIntersecting) run(0); }, { threshold: 0.6 });
