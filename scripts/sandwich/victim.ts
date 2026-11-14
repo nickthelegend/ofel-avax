@@ -1,11 +1,11 @@
-// The victim: an ordinary public swap on the demo pool. Buys tAVAX with tUSDC (default 31,000 tUSDC, about 1,000
+// The victim: an ordinary public swap on the demo pool. Buys tAVAX with tUSDC (default 8,000 tUSDC, about 1,000
 // tAVAX) with a 3% slippage limit, priority fee 2 gwei. Prints the quote it saw before sending and what it got.
 //   node scripts/sandwich/victim.ts [tUSDC=31000]
 import { parseGwei, parseUnits, decodeEventLog } from "viem";
 import { POOL, amountOut, fmt, line, loadDeployment, pub, walletOf } from "./common.ts";
 
 const d = loadDeployment();
-const amountIn = parseUnits(process.argv[2] ?? "31000", 18);
+const amountIn = parseUnits(process.argv[2] ?? "8000", 18);
 const w = walletOf("victim");
 const read = (fn: string) => pub.readContract({ address: d.pool, abi: POOL.abi, functionName: fn }) as Promise<bigint>;
 

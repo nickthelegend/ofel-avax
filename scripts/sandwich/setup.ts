@@ -1,5 +1,5 @@
 // Deploys the demo pool on the local Anvil fork of Fuji: two test tokens (tAVAX, tUSDC, no value), a constant-product
-// pool seeded at 31 tUSDC per tAVAX (100,000 / 3,100,000), and balances + approvals for the victim and the bot.
+// pool seeded at 8 tUSDC per tAVAX (100,000 / 800,000), near Chainlink AVAX/USD on Fuji, and balances + approvals for the victim and the bot.
 //   node scripts/sandwich/setup.ts
 import { writeFileSync } from "node:fs";
 import { maxUint256, parseUnits, type Hex } from "viem";
@@ -30,10 +30,10 @@ const tAVAX = await deploy(TOKEN.abi, TOKEN.bytecode, ["Test AVAX (demo pool)", 
 const tUSDC = await deploy(TOKEN.abi, TOKEN.bytecode, ["Test USDC (demo pool)", "tUSDC", 18, me]);
 const pool = await deploy(POOL.abi, POOL.bytecode, [tAVAX, tUSDC]);
 await call(tAVAX, TOKEN.abi, "mint", [me, e(100_000)]);
-await call(tUSDC, TOKEN.abi, "mint", [me, e(3_100_000)]);
+await call(tUSDC, TOKEN.abi, "mint", [me, e(800_000)]);
 await call(tAVAX, TOKEN.abi, "approve", [pool, maxUint256]);
 await call(tUSDC, TOKEN.abi, "approve", [pool, maxUint256]);
-await call(pool, POOL.abi, "seed", [e(100_000), e(3_100_000)]);
+await call(pool, POOL.abi, "seed", [e(100_000), e(800_000)]);
 const victim = accountOf("victim").address;
 const bot = accountOf("bot").address;
 await call(tUSDC, TOKEN.abi, "mint", [victim, e(100_000)]);

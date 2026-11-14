@@ -86,6 +86,31 @@ Sources:
 [18] https://docs.railgun.org/wiki/learn/railway-dex-swaps ·
 [19] https://blog.shutter.network/decommissioning-the-encrypted-mempool-on-gnosis-chain/
 
+## Markets
+
+Three markets, each its own `OfelBook` on the L1 with the same agent, bond and windows, all quoted in tUSDC and settled
+in the same eERC converter: **tAVAX/tUSDC** (`0x40Fb…D5aB`), **tBTC/tUSDC** (`0x1d7D4C671D5c297dBcd723eACdC8748E2e67D765`)
+and **tETH/tUSDC** (`0x060AAf36C325cf5AC26F29d0E4dcDB4B12040Ba6`); test assets tBTC `0xe1D9D782f705fB76076F77F6A067c4D5D997767c`
+and tETH `0x1703083b38cC4Ca60611fe68AF41D62281ff8d90` (deployed by `contracts/script/DeployMarkets.s.sol`, txs in
+`deployments/fuji-l1.json` → `marketsDeploy`). The desk's market strip switches between them, with each market's
+Chainlink Fuji price and its age (Fuji's BTC/USD and ETH/USD feeds update every few hours, so their houses accept an
+answer up to 25 h old; AVAX/USD stays at 1 h). One clearing agent and one house process run per market
+(`OFEL_MARKET=BTC|ETH`); they share the agent and house keys, so every transaction and eERC transfer from those wallets
+takes a cross-process lock (`scripts/lib/lock.ts`). The faucet gives tAVAX and tUSDC only, so a new wallet can buy tBTC
+and tETH but needs a fill before it can sell them.
+
+## Sandwich lab (local demo, labelled)
+
+`/sandwich` shows the attack Ofel is built against, for real but on a **local Anvil fork of the Fuji C-Chain** (4 s
+blocks, fee-ordered mempool, Anvil's public dev accounts): `contracts/src/sandwich/DemoPool.sol` is a minimal x*y=k pool
+(0.3% fee, demo only, not part of Ofel), `scripts/sandwich/bot.ts` reads pending swaps from the node's mempool filter,
+decodes size and side from the calldata, and sends a front-run (fee above the victim's) and a back-run (fee below), so the
+block reads front-run, victim, back-run and the victim pays above its quote. The page's lower half points the same
+reading at the real Ofel L1: a sealed order's calldata is a hash commitment, a Pedersen point and a ciphertext, so there is
+no side or size to trade on before the close. Run it: `bash scripts/sandwich/anvil.sh && node scripts/sandwich/setup.ts
+&& bash scripts/sandwich/run-demo.sh attacked`, then open the desk locally at `/sandwich`; `bash scripts/sandwich/stop.sh`
+stops everything. Tests: `forge test --match-path test/Sandwich.t.sol`.
+
 ## How it works
 
 1. **The seal: warplock.** Each batch has a close time T. The trader's browser encrypts the order to the exact bytes of

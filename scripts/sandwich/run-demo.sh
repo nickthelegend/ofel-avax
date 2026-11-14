@@ -6,7 +6,7 @@
 # JSON lines go to stdout and to /tmp/ofel-sandwich-<mode>.jsonl; results stay on the fork for the /sandwich page.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-MODE="${1:-attacked}"; AMT="${SANDWICH_AMOUNT:-31000}"
+MODE="${1:-attacked}"; AMT="${SANDWICH_AMOUNT:-8000}"
 OUT="/tmp/ofel-sandwich-$MODE.jsonl"; : > "$OUT"
 case "$MODE" in
   baseline) node scripts/sandwich/victim.ts "$AMT" | tee -a "$OUT" ;;
