@@ -63,7 +63,7 @@ Fuji L1; Playwright for QA.
     the signature check, a private eERC pay-in; the desk's own L1 explorer page for the seal and the pay-in; `cast
     receipt` of the seal, the clear (its log decoded with `cast abi-decode`) and the pay-in from the public RPC; and the
     ConvertSubnetToL1Tx on Avalanche's explorer.
-  - **Full walkthrough** `ofel-avax-walkthrough.mp4` (4:49), the same take with every landing section, the clear's tx
-    page, the auditor view and the Validators page (independent judge 8.6/10).
+  - **Full walkthrough** `ofel-avax-walkthrough.mp4` (4:43), the same take with every landing section, the clear's tx
+    page, the auditor view and the Validators page (v17, independent judge 8.7/10).
   The take's transactions and the validator-3 stop/start are in `deployments/fuji-l1.json` → `filmV10Run`. Every version
   and its judge notes: `grokbot/videos/ofel-avax/versions/` and `videos/ofel-avax/film/JUDGE-v*.md`.
