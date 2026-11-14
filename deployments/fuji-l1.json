@@ -216,5 +216,54 @@
         "tx": "0x7c1f98893871e329b30faa123d974e61674232a66f538b9d61b4d1a252b614ca"
       }
     ]
+  },
+  "filmV18Run": {
+    "note": "Film v18 (Nov 14 ~09:20 UTC): a fresh Test wallet on https://ofel-desk.vercel.app sealed a 0.20 tBTC buy and a 2 tETH buy; the house quoted blind ladders from Chainlink BTC/USD and ETH/USD on Fuji; both batches cleared. Sandwich lab run on a local Anvil fork of Fuji (not on any public chain).",
+    "btc": {
+      "batch": "8",
+      "limit": "67119.74",
+      "sealTx": "0xf37cc5cdf6f396d8d7568dba7196964a968502fc73e77ebfc8797cf3f1b9bdaa",
+      "clear": {
+        "price": "6686220",
+        "buyTotal": "47",
+        "sellTotal": "58",
+        "orders": 9,
+        "tx": "0xcc58ccd35d7fc33b5eb6b5a37224fa8b8f2d1a5905fc1d6cac39e76f5d4fa742"
+      }
+    },
+    "eth": {
+      "batch": "8",
+      "limit": "1906.05",
+      "sealTx": "0x9386636a815a00ccb26c9a42691d40fdcc35bce0253e944b2d100198b84ecd72",
+      "clear": {
+        "price": "189807",
+        "buyTotal": "410",
+        "sellTotal": "900",
+        "orders": 9,
+        "tx": "0xdad818bbc0370e5204d5dd5633a026864a6ff8c3e1686933653352015184072c"
+      }
+    },
+    "sandwichLocalFork": {
+      "swVictim": {
+        "t": "2026-11-14T09:27:26.471Z",
+        "event": "victim filled",
+        "hash": "0xd689a75d6f1af0cc5ca32cd84dd1fba845d4cf1946897221d065be09c133f491",
+        "block": "61055046",
+        "positionInBlock": 1,
+        "gotTAVAX": "940.67",
+        "quotedTAVAX": "967.83",
+        "paidPrice": "8.5045",
+        "quotedPrice": "8.2659",
+        "lostTAVAX": "27.16",
+        "lostTUSDCAtQuote": "224.48"
+      },
+      "swResult": {
+        "t": "2026-11-14T09:27:26.538Z",
+        "event": "bot result",
+        "profitTUSDC": "156.46",
+        "sameBlock": true,
+        "sandwiched": true
+      }
+    }
   }
 }
