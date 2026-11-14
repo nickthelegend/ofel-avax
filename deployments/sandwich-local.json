@@ -3,7 +3,7 @@
   "chainId": 43113,
   "rpc": "http://127.0.0.1:8546",
   "forkedFrom": "https://avalanche-fuji-c-chain-rpc.publicnode.com",
-  "forkBlock": "61055025",
+  "forkBlock": "61056158",
   "tAVAX": "0x65ac27b1e013fa8d4ecaf78dbe896c8e814a6b55",
   "tUSDC": "0xe22052d05793fa74caa4587f6b08202fe0072ea3",
   "pool": "0x07a6aaf72833896c2439552f711ef4719082e811",
