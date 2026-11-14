@@ -139,5 +139,82 @@
     "payTx": "0x3f9888034a705f9583a8623a1134c67ed0dfe6527b96b60433ee00603ab5ad6d",
     "validator3StoppedAt": "2026-11-13T22:25:45Z",
     "validator3StartedAt": "2026-11-13T22:27:33Z"
+  },
+  "markets": [
+    {
+      "id": "AVAX",
+      "base": "tAVAX",
+      "token": "0xc79eb2e7e25d053968d871f65f4bB5bD1Ddf7476",
+      "book": "0x40Fb0a21A8736d3cE05008D33888FE207975D5aB",
+      "decimals": 18,
+      "product": "AVAX-USD",
+      "feed": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
+      "feedLabel": "Chainlink AVAX / USD (Fuji)",
+      "unit": 100,
+      "houseMinSize": 150,
+      "houseMaxSize": 900,
+      "houseDepth": 1000
+    },
+    {
+      "id": "BTC",
+      "base": "tBTC",
+      "token": "0xe1D9D782f705fB76076F77F6A067c4D5D997767c",
+      "book": "0x1d7D4C671D5c297dBcd723eACdC8748E2e67D765",
+      "decimals": 8,
+      "product": "BTC-USD",
+      "feed": "0x31CF013A08c6Ac228C94551d535d5BAfE19c602a",
+      "feedLabel": "Chainlink BTC / USD (Fuji)",
+      "unit": 1,
+      "houseMinSize": 5,
+      "houseMaxSize": 30,
+      "houseDepth": 30
+    },
+    {
+      "id": "ETH",
+      "base": "tETH",
+      "token": "0x1703083b38cC4Ca60611fe68AF41D62281ff8d90",
+      "book": "0x060AAf36C325cf5AC26F29d0E4dcDB4B12040Ba6",
+      "decimals": 18,
+      "product": "ETH-USD",
+      "feed": "0x86d67c3D38D2bCeE722E601025C25a575021c6EA",
+      "feedLabel": "Chainlink ETH / USD (Fuji)",
+      "unit": 10,
+      "houseMinSize": 3,
+      "houseMaxSize": 30,
+      "houseDepth": 30
+    }
+  ],
+  "marketsDeploy": {
+    "note": "tBTC/tUSDC and tETH/tUSDC books (contracts/script/DeployMarkets.s.sol), Nov 14 2026; house minted 20 tBTC, 600 tETH, 400,000 tUSDC (test assets)",
+    "txs": [
+      {
+        "what": "OfelTestToken",
+        "tx": "0x9ad5fd636bba8662f4943d67e468f38ff80ebf055046ebe4029689e23a6edd2c"
+      },
+      {
+        "what": "OfelTestToken",
+        "tx": "0xd9025e0fa5b06bc55c9cf21bac0372c783887b5c63637b9589f33ac354055a19"
+      },
+      {
+        "what": "OfelBook",
+        "tx": "0xc00aeae701f52d91d5cc53799a477556e490c7b8df92070c5dff052c53197a5e"
+      },
+      {
+        "what": "OfelBook",
+        "tx": "0x1f930a206ff251834f3bc0e3667810b7d4e7cc8efe70393018287c5b5bd6f04f"
+      },
+      {
+        "what": "OfelTestToken ['0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81', '2000000000']",
+        "tx": "0x5e73d149ac3fe4f6a798ea6791d1ddd56bde107848716dfe7ed740564f6783e2"
+      },
+      {
+        "what": "OfelTestToken ['0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81', '600000000000000000000']",
+        "tx": "0x3014195d92bc2736cc0dc6de1d49cb3d8b6d423eb951eda63023828826e44ae3"
+      },
+      {
+        "what": "mint(address,uint256) ['0xFe2275fB49f0F5D5b2f07d2cF3D444a896cfda81', '400000000000']",
+        "tx": "0x7c1f98893871e329b30faa123d974e61674232a66f538b9d61b4d1a252b614ca"
+      }
+    ]
   }
 }

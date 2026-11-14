@@ -101,7 +101,9 @@ services:
       OFEL_BLOCKCHAIN_ID: ${OFEL_CHAIN_ID:-}
       OFEL_BATCH_SECONDS: "90"
       OFEL_API_PORT: "8790"
-    volumes: ["./circuits:/app/web/public/circuits:ro"]
+      # The agent and house keys are shared by every market's process: transactions and eERC transfers take this lock.
+      OFEL_LOCK_DIR: /locks
+    volumes: ["./circuits:/app/web/public/circuits:ro", "./locks:/locks"]
     depends_on: [v1, v2, v3]
     labels:
       - traefik.enable=true
@@ -127,8 +129,59 @@ services:
       OFEL_API_PORT: ""
       OFEL_HOUSE_IGNORE: 0xA236AE4f4e75d47e1c4793F1055D834f6C3728bC,0x2ec3853CdB2de1b06FE0D07fB5Fb8F97884EBd03
     command: ["node", "house.ts"]
-    volumes: ["./circuits:/app/web/public/circuits:ro"]
+    volumes: ["./circuits:/app/web/public/circuits:ro", "./locks:/locks"]
     depends_on: [agent]
+
+  # More markets (Nov 14): tBTC/tUSDC and tETH/tUSDC, each its own OfelBook (deployments/fuji-l1.json `markets`).
+  # One clearing agent and one house per market, same keys as above, serialised by the shared lock. Chainlink's BTC/USD
+  # and ETH/USD feeds on Fuji update every few hours, so their houses accept answers up to 25 h old (the desk shows the age).
+  agent-btc: &marketagent
+    profiles: [agent]
+    image: hk-ofel-agent:latest
+    restart: unless-stopped
+    networks: [coolify]
+    mem_limit: 700m
+    memswap_limit: 1g
+    cpus: 0.5
+    env_file: [.env.agent]
+    environment:
+      <<: *agentenv
+      OFEL_API_PORT: ""
+      OFEL_MARKET: BTC
+    volumes: ["./circuits:/app/web/public/circuits:ro", "./locks:/locks"]
+    depends_on: [agent]
+  agent-eth:
+    <<: *marketagent
+    environment:
+      <<: *agentenv
+      OFEL_API_PORT: ""
+      OFEL_MARKET: ETH
+  house-btc: &markethouse
+    profiles: [agent]
+    image: hk-ofel-agent:latest
+    restart: unless-stopped
+    networks: [coolify]
+    mem_limit: 600m
+    memswap_limit: 900m
+    cpus: 0.5
+    env_file: [.env.house]
+    environment:
+      <<: *agentenv
+      OFEL_API_PORT: ""
+      OFEL_MARKET: BTC
+      OFEL_HOUSE_MAX_AGE_S: "90000"
+      OFEL_HOUSE_IGNORE: 0xA236AE4f4e75d47e1c4793F1055D834f6C3728bC,0x2ec3853CdB2de1b06FE0D07fB5Fb8F97884EBd03
+    command: ["node", "house.ts"]
+    volumes: ["./circuits:/app/web/public/circuits:ro", "./locks:/locks"]
+    depends_on: [agent]
+  house-eth:
+    <<: *markethouse
+    environment:
+      <<: *agentenv
+      OFEL_API_PORT: ""
+      OFEL_MARKET: ETH
+      OFEL_HOUSE_MAX_AGE_S: "90000"
+      OFEL_HOUSE_IGNORE: 0xA236AE4f4e75d47e1c4793F1055D834f6C3728bC,0x2ec3853CdB2de1b06FE0D07fB5Fb8F97884EBd03
 
 networks:
   coolify:

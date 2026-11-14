@@ -9,29 +9,33 @@
 // and reclaims its bonds.
 //   node --env-file=../.env.fuji house.ts         (needs OFEL_HOUSE_PK with OFEL gas and private eERC balances)
 import { BUY, SELL, fillFor, houseLadder, inCross, ladderBand, openMine, sealOrder, selfKeyFromSignature, selfKeyMessage, encryptedErcAbi, type Side } from "@ofel/core";
-import { createPublicClient, decodeFunctionData, http, parseAbiItem, toBytes, type Abi, type Hex } from "viem";
+import { createPublicClient, decodeFunctionData, erc20Abi, http, parseAbiItem, toBytes, type Abi, type Hex } from "viem";
 import { avalancheFuji } from "viem/chains";
 import { BOOK, bookAbi, ctx, batchCount, getBatch, getEnvelopes, getOrders, validators, type BatchView } from "./lib/book.ts";
-import { deployment, log, publicClient, walletFor } from "./lib/env.ts";
+import { BASE, deployment, log, market, publicClient, walletFor } from "./lib/env.ts";
+import { withLock } from "./lib/lock.ts";
 import { eercFor, privateBalance, privateTransfer } from "./lib/eerc.ts";
 
 const SPREAD_BPS = BigInt(process.env.OFEL_HOUSE_SPREAD_BPS ?? 15);
 const MAX_AGE_S = Number(process.env.OFEL_HOUSE_MAX_AGE_S ?? 3600); // older Chainlink answer = no quote
-const FEED = (process.env.OFEL_AVAX_USD_FEED ?? "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD") as Hex; // Chainlink AVAX/USD, Fuji
+const FEED = (process.env.OFEL_AVAX_USD_FEED ?? market?.feed ?? "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD") as Hex; // Chainlink <base>/USD, Fuji
+const FEED_LABEL = market?.feedLabel ?? "Chainlink AVAX / USD (Fuji)";
 const fuji = createPublicClient({ chain: avalancheFuji, transport: http(process.env.OFEL_FUJI_RPC ?? "https://avalanche-fuji-c-chain-rpc.publicnode.com") });
 const feedAbi = [{ type: "function", name: "latestRoundData", stateMutability: "view", inputs: [], outputs: [{ type: "uint80" }, { type: "int256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint80" }] }] as const;
 
 /** Chainlink's AVAX/USD answer (8 decimals), refused when stale. */
-async function chainlink(): Promise<{ answer: bigint; mid: number; round: bigint }> {
+async function chainlink(): Promise<{ answer: bigint; mid: number; round: bigint; age: number }> {
   const [round, answer, , updatedAt] = await fuji.readContract({ address: FEED, abi: feedAbi, functionName: "latestRoundData" });
   const age = Date.now() / 1000 - Number(updatedAt);
-  if (answer <= 0n) throw new Error("Chainlink AVAX/USD returned no price");
-  if (age > MAX_AGE_S) throw new Error(`Chainlink AVAX/USD is ${Math.round(age)} s old (max ${MAX_AGE_S}): not quoting`);
-  return { answer, mid: Number(answer) / 1e8, round };
+  if (answer <= 0n) throw new Error(`${FEED_LABEL} returned no price`);
+  if (age > MAX_AGE_S) throw new Error(`${FEED_LABEL} is ${Math.round(age)} s old (max ${MAX_AGE_S}): not quoting`);
+  return { answer, mid: Number(answer) / 1e8, round, age };
 }
-const DEPTH = Number(process.env.OFEL_HOUSE_DEPTH ?? 1000); // whole tAVAX an outside order on either side fills in full
-const MIN_SIZE = Number(process.env.OFEL_HOUSE_MIN_SIZE ?? 150); // whole tAVAX per house order
-const MAX_SIZE = Number(process.env.OFEL_HOUSE_MAX_SIZE ?? 900);
+const DEPTH = Number(process.env.OFEL_HOUSE_DEPTH ?? market?.houseDepth ?? 1000); // whole tAVAX an outside order on either side fills in full
+const MIN_SIZE = Number(process.env.OFEL_HOUSE_MIN_SIZE ?? market?.houseMinSize ?? 150); // whole tAVAX per house order
+const MAX_SIZE = Number(process.env.OFEL_HOUSE_MAX_SIZE ?? market?.houseMaxSize ?? 900);
+const UNIT = market?.unit ?? 100; // base units (0.01 of the base asset) per size step
+const sz = (n: number) => (n * UNIT) / 100;
 const MIN_LEFT = Number(process.env.OFEL_HOUSE_MIN_LEFT ?? 15); // seconds before T below which it does not quote
 
 const house = walletFor("OFEL_HOUSE_PK");
@@ -48,7 +52,7 @@ if (!(await registered(house.account.address))) {
 {
   const q = await chainlink();
   const { lo, hi } = ladderBand(q.answer, SPREAD_BPS);
-  log("house", `${house.account.address} seals a blind ladder, 3-5 orders per side of ${MIN_SIZE}-${MAX_SIZE} tAVAX, limits ${Number(lo) / 100}-${Number(hi) / 100} (±${Number(SPREAD_BPS) / 100}% around Chainlink ${q.mid}), depth ${DEPTH} tAVAX either side`);
+  log("house", `${BASE} market ${BOOK}: ${house.account.address} seals a blind ladder, 3-5 orders per side of ${sz(MIN_SIZE)}-${sz(MAX_SIZE)} ${BASE}, limits ${Number(lo) / 100}-${Number(hi) / 100} (±${Number(SPREAD_BPS) / 100}% around ${FEED_LABEL} ${q.mid}), depth ${sz(DEPTH)} ${BASE} either side`);
 }
 
 async function registered(user: Hex): Promise<boolean> {
@@ -68,10 +72,11 @@ async function quote(b: BatchView) {
   const bond = (await publicClient.readContract({ address: BOOK, abi: bookAbi, functionName: "bond" })) as bigint;
   const vs = await validators();
   const q = await chainlink();
-  const ladder = houseLadder({ answer: q.answer, spreadBps: SPREAD_BPS, minSize: MIN_SIZE, maxSize: MAX_SIZE, depth: DEPTH });
+  const ladder = houseLadder({ answer: q.answer, spreadBps: SPREAD_BPS, minSize: MIN_SIZE, maxSize: MAX_SIZE, depth: DEPTH, unit: UNIT });
   const show = (side: number) => ladder.filter((o) => o.side === side).map((o) => `${Number(o.size) / 100}@${Number(o.limit) / 100}`).join(" ");
-  log(`batch ${b.id} house ladder`, `Chainlink AVAX/USD ${q.mid} (round ${q.round}) → bids ${show(BUY)} | asks ${show(SELL)}`);
+  log(`batch ${b.id} house ladder`, `${FEED_LABEL} ${q.mid} (round ${q.round}, ${Math.round(q.age / 60)} min old) → bids ${show(BUY)} | asks ${show(SELL)}`);
   // One nonce per order, sent back to back, so the whole ladder lands in a block or two before the close.
+  await withLock("house", async () => {
   let nonce = await publicClient.getTransactionCount({ address: house.account.address, blockTag: "pending" });
   const sent: { side: Side; hash: Hex }[] = [];
   for (const o of ladder) {
@@ -84,6 +89,7 @@ async function quote(b: BatchView) {
     const r = await publicClient.waitForTransactionReceipt({ hash });
     log(`batch ${b.id} house ${side === BUY ? "bid" : "ask"} sealed`, `${r.status} ${hash}`);
   }
+  });
 }
 
 // ------------------------------------------------------------- settlement
@@ -113,8 +119,11 @@ async function settle(b: BatchView) {
   const mine = (await getOrders(b.id)).filter((o) => o.trader.toLowerCase() === me);
   if (!mine.length) return;
   for (const o of mine.filter((o) => o.status === 4 || o.status === 6)) {
-    const h = await house.writeContract({ address: BOOK, abi: bookAbi, functionName: "claimBond", args: [b.id, o.index], chain: undefined });
-    await publicClient.waitForTransactionReceipt({ hash: h });
+    const h = await withLock("house", async () => {
+      const h = await house.writeContract({ address: BOOK, abi: bookAbi, functionName: "claimBond", args: [b.id, o.index], chain: undefined });
+      await publicClient.waitForTransactionReceipt({ hash: h });
+      return h;
+    });
     log(`batch ${b.id} house claimBond ${o.index}`, h);
   }
   if (!mine.some((o) => o.status === 5)) return; // nothing of ours left to pay in
@@ -144,8 +153,8 @@ async function settle(b: BatchView) {
   for (const token of [first, first === deployment.tAVAX ? deployment.tUSDC : deployment.tAVAX] as Hex[]) {
     const mineOf = legs.filter((l) => l.token === token);
     for (const l of mineOf.slice(paid.get(token) ?? 0)) {
-      const tx = await privateTransfer(eerc, house.account.address, deployment.agent, token, l.amount, `ofel:${b.id}:${l.index}:in`);
-      log(`batch ${b.id} house pay-in ${l.index}`, `${l.amount} ${l.side === BUY ? "tUSDC" : "tAVAX"} units ${tx}`);
+      const tx = await withLock("house", () => privateTransfer(eerc, house.account.address, deployment.agent, token, l.amount, `ofel:${b.id}:${l.index}:in`));
+      log(`batch ${b.id} house pay-in ${l.index}`, `${l.amount} ${l.side === BUY ? "tUSDC" : BASE} units ${tx}`);
     }
   }
 }
@@ -169,8 +178,20 @@ async function tick() {
   }
 }
 
+// Inventory: any public test assets the house holds (minted by the deployer) go into its private eERC balance first.
+await withLock("house", async () => {
+  for (const t of [deployment.tAVAX, deployment.tUSDC] as Hex[]) {
+    const pub = (await publicClient.readContract({ address: t, abi: erc20Abi, functionName: "balanceOf", args: [house.account.address] })) as bigint;
+    if (pub === 0n) continue;
+    let h = await house.writeContract({ address: t, abi: erc20Abi, functionName: "approve", args: [deployment.encryptedERC, pub], chain: undefined });
+    await publicClient.waitForTransactionReceipt({ hash: h });
+    const d = await eerc.deposit(pub, t, 2n);
+    await publicClient.waitForTransactionReceipt({ hash: d.transactionHash as Hex });
+    log("house deposit into eERC", `${pub} raw units of ${t} ${d.transactionHash}`);
+  }
+});
 const [a, u] = await Promise.all([privateBalance(eerc, house.account.address, deployment.tAVAX as Hex), privateBalance(eerc, house.account.address, deployment.tUSDC as Hex)]);
-log("house inventory", `${Number(a.decrypted) / 100} tAVAX, ${Number(u.decrypted) / 100} tUSDC (private)`);
+log("house inventory", `${Number(a.decrypted) / 100} ${BASE}, ${Number(u.decrypted) / 100} tUSDC (private)`);
 for (;;) {
   try {
     await tick();

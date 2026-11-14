@@ -24,6 +24,8 @@ export interface LadderOptions {
   maxOrders?: number;
   /** whole tAVAX */
   minSize?: number;
+  /** base units (0.01 of the base asset) per size step: 100 = whole tAVAX (default), 1 = 0.01 tBTC */
+  unit?: number;
   maxSize?: number;
   /** whole tAVAX an outside order on either side must be able to fill in full */
   depth?: number;
@@ -68,7 +70,8 @@ export function houseLadder(o: LadderOptions): LadderOrder[] {
   const spread = o.spreadBps ?? 15n;
   const [minN, maxN] = [o.minOrders ?? 3, o.maxOrders ?? 5];
   const [minS, maxS] = [o.minSize ?? 150, o.maxSize ?? 900];
-  const depth = BigInt(o.depth ?? 1000) * 100n;
+  const unit = BigInt(o.unit ?? 100);
+  const depth = BigInt(o.depth ?? 1000) * unit;
   const minPerSide = o.minPerSide ?? 2;
   const rand = o.rand ?? Math.random;
   const { lo, hi } = ladderBand(o.answer, spread);
@@ -78,7 +81,7 @@ export function houseLadder(o: LadderOptions): LadderOrder[] {
     const ladder: LadderOrder[] = [];
     for (const side of [BUY, SELL] as Side[]) {
       const n = int(minN, maxN);
-      for (let i = 0; i < n; i++) ladder.push({ side, limit: limit(), size: BigInt(int(minS, maxS)) * 100n });
+      for (let i = 0; i < n; i++) ladder.push({ side, limit: limit(), size: BigInt(int(minS, maxS)) * unit });
     }
     const ok = ([BUY, SELL] as Side[]).every((side) => {
       const c = checkLadder(ladder, { side, size: depth, limit: side === BUY ? hi * 2n : 1n });

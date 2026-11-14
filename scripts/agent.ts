@@ -21,7 +21,8 @@ import {
 import { decodeFunctionData, parseAbiItem, toHex, type Abi, type Hex } from "viem";
 import { encryptedErcAbi } from "@ofel/core";
 import { BOOK, bookAbi, collectSignatures, ctx, getBatch, getEnvelopes, getOrders, batchCount, STATE, validators, type BatchView } from "./lib/book.ts";
-import { deployment, log, publicClient, walletFor } from "./lib/env.ts";
+import { BASE, deployment, log, publicClient, walletFor } from "./lib/env.ts";
+import { withLock } from "./lib/lock.ts";
 import { eercFor, privateBalance, privateTransfer } from "./lib/eerc.ts";
 import { startApi } from "./lib/api.ts";
 
@@ -42,6 +43,10 @@ const agentPub = toHex(agentPublicKey(agentSecret));
 const TIME_GATED = new Set(["closeBatch", "clear", "sweepBond"]);
 
 async function send(functionName: string, args: unknown[]): Promise<Hex> {
+  return withLock("agent", () => sendNow(functionName, args));
+}
+
+async function sendNow(functionName: string, args: unknown[]): Promise<Hex> {
   let hash: Hex;
   if (TIME_GATED.has(functionName)) {
     hash = await agent.writeContract({ address: BOOK, abi: bookAbi, functionName, args, gas: 3_000_000n, chain: undefined } as never);
@@ -59,7 +64,7 @@ const onChainKey = (await publicClient.readContract({ address: BOOK, abi: bookAb
 if (onChainKey.toLowerCase() !== agentPub.toLowerCase()) {
   log("setAgentKey", await send("setAgentKey", [agentPub]));
 }
-log("agent", `${me} key ${agentPub.slice(0, 18)}…`);
+log("agent", `${BASE} market ${BOOK}: ${me} key ${agentPub.slice(0, 18)}…`);
 if (process.env.OFEL_API_PORT) startApi(Number(process.env.OFEL_API_PORT), me);
 
 const nowS = () => BigInt(Math.floor(Date.now() / 1000));
@@ -204,9 +209,9 @@ async function settle(b: BatchView) {
       continue;
     }
     usedPayIns.add(pay.tx);
-    log(`batch ${b.id} order ${o.index} pay-in`, `${pay.amount} ${o.side === BUY ? "tUSDC" : "tAVAX"} units ${pay.tx}`);
-    const out = await privateTransfer(eerc, me, o.trader, outToken, outAmount, `ofel:${b.id}:${o.index}:out`);
-    log(`batch ${b.id} order ${o.index} payout`, `${outAmount} ${o.side === BUY ? "tAVAX" : "tUSDC"} units ${out}`);
+    log(`batch ${b.id} order ${o.index} pay-in`, `${pay.amount} ${o.side === BUY ? "tUSDC" : BASE} units ${pay.tx}`);
+    const out = await withLock("agent", () => privateTransfer(eerc, me, o.trader, outToken, outAmount, `ofel:${b.id}:${o.index}:out`));
+    log(`batch ${b.id} order ${o.index} payout`, `${outAmount} ${o.side === BUY ? BASE : "tUSDC"} units ${out}`);
     log(`batch ${b.id} order ${o.index} markSettled`, await send("markSettled", [b.id, o.index]));
   }
 }

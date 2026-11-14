@@ -15,6 +15,19 @@ export function need(k: string): string {
 export const NET = process.env.OFEL_NETWORK ?? "local";
 export const deployment = JSON.parse(readFileSync(`${ROOT}deployments/${NET}.json`, "utf8")) as Record<string, Hex>;
 
+/** One market per process: OFEL_MARKET=BTC points `ofelBook` and the base asset (`tAVAX`) at that market's book and
+ *  token from deployments/<net>.json `markets`; the quote asset is tUSDC for every market. Default: the tAVAX book. */
+export interface Market { id: string; base: string; token: Hex; book: Hex; decimals: number; product: string; feed: Hex; feedLabel: string; unit: number; houseMinSize: number; houseMaxSize: number; houseDepth: number }
+const markets = ((deployment as unknown as { markets?: Market[] }).markets ?? []) as Market[];
+export const MARKET_ID = process.env.OFEL_MARKET ?? "AVAX";
+export const market: Market | undefined = markets.find((m) => m.id === MARKET_ID);
+if (process.env.OFEL_MARKET && !market) throw new Error(`Setup required: market ${MARKET_ID} is not in deployments/${NET}.json`);
+if (market) {
+  deployment.ofelBook = market.book;
+  deployment.tAVAX = market.token;
+}
+export const BASE = market?.base ?? "tAVAX";
+
 export const BLOCKCHAIN_ID = need("OFEL_BLOCKCHAIN_ID");
 export const SUBNET_ID = need("OFEL_SUBNET_ID");
 export const PCHAIN_URL = need("OFEL_PCHAIN_URL");
