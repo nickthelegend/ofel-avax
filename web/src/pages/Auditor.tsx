@@ -57,7 +57,7 @@ async function legAssets(hashes: Hex[]): Promise<Map<string, string>> {
       const id = BigInt("0x" + tx.input.slice(2 + 8 + 64, 2 + 8 + 128));
       if (!ids.has(id)) {
         const token = (await client.readContract({ address: cfg.eerc, abi: eercAbi, functionName: "tokenAddresses", args: [id] })) as Hex;
-        ids.set(id, token.toLowerCase() === cfg.tAVAX.toLowerCase() ? "tAVAX" : token.toLowerCase() === cfg.tUSDC.toLowerCase() ? "tUSDC" : `token ${id}`);
+        ids.set(id, token.toLowerCase() === cfg.tUSDC.toLowerCase() ? "tUSDC" : cfg.markets.find((m) => m.token.toLowerCase() === token.toLowerCase())?.base ?? `token ${id}`);
       }
       out.set(h, ids.get(id)!);
     }),
@@ -100,7 +100,7 @@ export function AuditView() {
       {audit.data && audit.data.rows.length === 0 && <State kind="empty" title="Nothing to audit yet">No closed batch has orders.</State>}
       {!!audit.data?.rows.length && (
         <table className="tbl" data-film="audit-orders">
-          <thead><tr><th>Batch</th><th className="hide-sm">#</th><th>Trader</th><th>Side</th><th>Size <i>tAVAX</i></th><th>Limit</th><th>Commitment</th><th className="hide-sm">Opened with</th></tr></thead>
+          <thead><tr><th>Batch</th><th className="hide-sm">#</th><th>Trader</th><th>Side</th><th>Size <i>{cfg.base}</i></th><th>Limit</th><th>Commitment</th><th className="hide-sm">Opened with</th></tr></thead>
           <tbody>
             {audit.data.rows.map((r) => (
               <tr key={`${r.batch}-${r.index}`}>

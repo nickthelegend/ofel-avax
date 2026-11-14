@@ -1105,3 +1105,20 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
 .sw-read dd { margin: 0; text-align: right; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
 .sw-read .sw-no dd { color: var(--up); font-weight: 700; }
 @media (max-width: 760px) { .sw-read { grid-template-columns: 1fr; } .sw-read div { flex-direction: column; gap: 4px; } .sw-read dd { text-align: left; } }
+
+/* Markets: one OfelBook per pair, all quoted in tUSDC */
+.mbar-wrap { grid-area: mbar; display: grid; gap: 8px; min-width: 0; }
+.mswitch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+.mswitch button { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 52px; padding: 8px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mswitch button:hover { border-color: var(--muted); }
+.mswitch button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); cursor: default; }
+.mswitch .ms-name { display: grid; min-width: 0; }
+.mswitch .ms-name b { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.mswitch .ms-name small, .mswitch .ms-px small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mswitch .ms-px { margin-left: auto; display: grid; text-align: right; flex: none; }
+.mswitch .ms-px b { font-size: 14px; font-weight: 700; }
+@media (max-width: 900px) { .mswitch .ms-name small { display: none; } }
+@media (max-width: 640px) { .mswitch { grid-template-columns: 1fr; gap: 6px; } .mswitch button { min-height: 44px; padding: 6px 12px; } .mswitch .ms-name small { display: block; } }
+.bal-grid-n { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.bal-grid-n .bal small { display: block; font-size: 11px; }
+.mbar-wrap > .mbar { grid-area: auto; }

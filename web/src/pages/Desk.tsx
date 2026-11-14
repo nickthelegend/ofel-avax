@@ -3,17 +3,17 @@
 // Avalanche Fuji (Chainlink, P-Chain) or a public exchange named on screen.
 import { useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "warplock";
-import { cfg } from "../lib/config";
+import { cfg, switchMarket } from "../lib/config";
 import { checkSignatures, getOrders, getSealed, recentBatches, validatorStatus, type Batch, type ValidatorStatus } from "../lib/chain";
 import { useLive, useNow } from "../lib/hooks";
 import { countdown, short, units, utc } from "../lib/format";
 import { tryOpenEarly, type EarlyAttempt } from "../lib/orders";
 import { fetchCandles, INTERVALS, type Interval } from "../lib/candles";
-import { chainlinkAvax, feedUrl, fix, ofelClears, priced, usd, type Clear } from "../lib/market";
+import { chainlinkAvax, feedName, feedUrl, fix, marketPrices, ofelClears, priced, usd, type Clear } from "../lib/market";
 import { DeskChart, type Ohlc } from "../components/CandleChart";
 import { Ticket, type TicketDraft } from "../components/Ticket";
 import { DeskTabs } from "../components/DeskTabs";
-import { Hash, Icon, Link, Pair, Skel, State, useMedia } from "../components/ui";
+import { BaseDisc, Hash, Icon, Link, Pair, Skel, State, useMedia } from "../components/ui";
 
 // Where the AES-GCM ciphertext starts in a stored envelope, in hex chars: "0x", the ABI head (64 bytes) and length word
 // (32), then warplock's 3-byte head, 3 key shares of 133 bytes and the 12-byte IV. Previewing from here shows bytes that
@@ -38,7 +38,7 @@ export function Desk() {
       return "5m";
     }
   });
-  const candles = useLive(() => fetchCandles("AVAX", iv, 300), [iv], 10000);
+  const candles = useLive(() => fetchCandles(cfg.market.id, iv, 300), [iv], 10000);
   const [draft, setDraft] = useState<TicketDraft>({ side: 1, limit: null });
   const [refreshKey, setRefreshKey] = useState(0);
   const lastClear = clears.data?.at(-1);
@@ -53,12 +53,48 @@ export function Desk() {
 
   return (
     <main className={`term ${wide ? "term-wide" : ""}`} id="main">
+      <div className="mbar-wrap">
+      <MarketSwitch now={now} />
       <MarketBar current={current} now={now} vals={vals.data} valsErr={vals.error} lastClear={lastClear} refPrice={ref.data} refErr={ref.error} candles={candles.data} iv={iv} setIv={setIv} l1Err={batches.error} />
+      </div>
       <ChartPanel iv={iv} candles={candles.data} candlesErr={candles.error} rounds={ref.data?.rounds ?? []} clears={clears.data ?? []} draft={draft} />
       <BookPanel batch={current} prev={batches.data?.[1]} now={now} vals={vals.data} refreshKey={refreshKey} />
       <Ticket batch={current} lastClear={lastClear} refPrice={ref.data?.price} onDraft={setDraft} onSealed={() => setRefreshKey((k) => k + 1)} />
       <DeskTabs batches={batches.data} clears={clears.data} clearsErr={clears.error} lastClear={lastClear} refreshKey={refreshKey} />
     </main>
+  );
+}
+
+/* ================================================================ market switcher */
+/** Every Ofel market (one OfelBook each, all quoted in tUSDC), with its Chainlink Fuji price and how old that answer is.
+ *  Fuji's BTC/USD and ETH/USD feeds update every few hours, so the age is shown, never hidden. */
+function MarketSwitch({ now }: { now: number }) {
+  const px = useLive(() => marketPrices(cfg.markets), [], 30000);
+  const age = (ts?: number) => {
+    if (!ts) return "";
+    const d = Math.max(0, now - ts);
+    return d < 90 ? `${Math.round(d)}s ago` : d < 5400 ? `${Math.round(d / 60)}m ago` : `${(d / 3600).toFixed(1)}h ago`;
+  };
+  return (
+    <nav className="mswitch" aria-label="Markets" data-film="markets">
+      {cfg.markets.map((m) => {
+        const p = px.data?.find((x) => x.id === m.id);
+        const on = m.id === cfg.market.id;
+        return (
+          <button key={m.id} type="button" className={on ? "on" : ""} aria-pressed={on} data-market={m.id} onClick={() => !on && switchMarket(m.id)} title={`${m.feedLabel} · book ${m.book}`}>
+            <BaseDisc id={m.id} size={22} />
+            <span className="ms-name">
+              <b>{m.base} / tUSDC</b>
+              <small>{m.feedLabel.replace(" (Fuji)", "")}</small>
+            </span>
+            <span className="ms-px num">
+              <b>{p?.price ? usd(p.price, m.id === "AVAX" ? 3 : 2) : p?.error ? "unavailable" : "…"}</b>
+              <small>{p?.updatedAt ? age(p.updatedAt) : ""}</small>
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -98,18 +134,18 @@ function MarketBar({
   return (
     <section className="mbar dark" aria-label="Market" data-film="market-bar">
       <div className="mb-pair">
-        <Pair size={32} />
+        <Pair size={32} base={cfg.market.id} />
         <div>
-          <b>tAVAX / tUSDC</b>
+          <b>{cfg.market.base} / tUSDC</b>
           <small>Sealed batch auction · Ofel L1</small>
         </div>
       </div>
       <div className="mb-cell">
-        <span>AVAX/USD <small>· Chainlink</small></span>
-        <b className="num" title={refErr}>{refPrice ? usd(refPrice.price, 3) : refErr ? "unavailable" : "…"}</b>
+        <span>{cfg.market.id}/USD <small>· Chainlink</small></span>
+        <b className="num" title={refErr}>{refPrice ? usd(refPrice.price, cfg.market.id === "AVAX" ? 3 : 2) : refErr ? "unavailable" : "…"}</b>
       </div>
       <div className={`mb-cell mb-now ${chg == null ? "" : chg >= 0 ? "up" : "down"}`}>
-        <span title={candles ? `${candles.source.name} ${candles.source.pair}` : undefined}>AVAX/USD <small>· {candles ? candles.source.name : "exchange"}</small></span>
+        <span title={candles ? `${candles.source.name} ${candles.source.pair}` : undefined}>{cfg.market.id}/USD <small>· {candles ? candles.source.name : "exchange"}</small></span>
         <b className="num">
           {last ? usd(last.c, 3) : "…"}
           {chg != null && <small> {chg >= 0 ? "▲" : "▼"}{Math.abs(chg).toFixed(2)}%</small>}
@@ -147,7 +183,7 @@ function ChartPanel({ iv, candles, candlesErr, rounds, clears, draft }: { iv: In
   return (
     <section className="pnl chartp" aria-label="Price chart" data-film="chart">
       <header className="pnl-tabs">
-        <span className="pnl-tab on">AVAX / USD</span>
+        <span className="pnl-tab on">{cfg.market.id} / USD</span>
         <span className="pnl-tab on sub">Ofel clears</span>
         {sel && (
           <span className="ohlc mono hide-sm">
@@ -174,17 +210,22 @@ function ChartPanel({ iv, candles, candlesErr, rounds, clears, draft }: { iv: In
           <DeskChart candles={k} sec={INTERVALS[iv]} rounds={rounds} clears={clears} limit={draft.limit} limitLabel={limitLabel} onHover={setHover} />
         ) : candlesErr ? (
           <div className="chart-wait">
-            <State kind="error" title="No exchange answered for AVAX candles">{candlesErr}. The sealed book and clears below are still live from the Ofel L1.</State>
+            <State kind="error" title={`No exchange answered for ${cfg.market.id} candles`}>{candlesErr}. The sealed book and clears below are still live from the Ofel L1.</State>
           </div>
         ) : (
           <div className="chart-wait">
-            <i className="pulse" /> Loading AVAX-USD {iv} candles…
+            <i className="pulse" /> Loading {cfg.market.product} {iv} candles…
           </div>
         )}
       </div>
       <p className="chart-foot mono">
         {candles ? <a href={candles.source.url} target="_blank" rel="noreferrer">{candles.source.name} {candles.source.pair}</a> : "Exchange"} {iv} candles,{" "}
-        <a href={feedUrl} target="_blank" rel="noreferrer">Chainlink AVAX/USD on Fuji</a> (step line) and each Ofel batch's clearing price (dots, BatchCleared on the L1). The house quotes ±0.15% around Chainlink from batch #{cfg.repricedFrom.toString()}; earlier batches cleared at a fixed ~31 tUSDC test quote and are only in the Batches tab.
+        <a href={feedUrl} target="_blank" rel="noreferrer">{feedName} on Fuji</a> (step line) and each Ofel batch's clearing price on this market's book (dots, BatchCleared on the L1).{" "}
+        {cfg.market.id === "AVAX" ? (
+          <>The house quotes ±0.15% around Chainlink from batch #{cfg.repricedFrom.toString()}; earlier batches cleared at a fixed ~31 tUSDC test quote and are only in the Batches tab.</>
+        ) : (
+          <>The house quotes ±0.15% around this Chainlink answer; Fuji's {cfg.market.id}/USD feed updates every few hours, so clears can sit away from the live exchange candles.</>
+        )}
       </p>
     </section>
   );

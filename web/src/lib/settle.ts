@@ -21,7 +21,7 @@ export async function payInOnChain(me: Hex, batchId: bigint): Promise<Hex | unde
 
 export function payInLeg(r: MyRow): { token: Hex; amount: bigint; sym: string } | undefined {
   if (!r.fill) return undefined;
-  return r.mine.side === BUY ? { token: cfg.tUSDC, amount: r.fill.quote, sym: "tUSDC" } : { token: cfg.tAVAX, amount: r.fill.base, sym: "tAVAX" };
+  return r.mine.side === BUY ? { token: cfg.tUSDC, amount: r.fill.quote, sym: "tUSDC" } : { token: cfg.tAVAX, amount: r.fill.base, sym: cfg.base };
 }
 
 export async function payIn(w: WalletClient, me: Hex, r: MyRow): Promise<Hex> {

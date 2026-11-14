@@ -19,8 +19,8 @@ export type Fill = { ts: number; price: number; size: number; takerBuy: boolean 
 export type Marker = Fill & { t: number };
 export type Round = { roundId: bigint; ts: number; price: number };
 
-const COINBASE: Record<string, string> = { AVAX: 'AVAX-USD', BTC: 'BTC-USD' };
-const BINANCE: Record<string, string> = { AVAX: 'AVAXUSDT', BTC: 'BTCUSDT' };
+const COINBASE: Record<string, string> = { AVAX: 'AVAX-USD', BTC: 'BTC-USD', ETH: 'ETH-USD' };
+const BINANCE: Record<string, string> = { AVAX: 'AVAXUSDT', BTC: 'BTCUSDT', ETH: 'ETHUSDT' };
 
 /** Coinbase rows: [time, low, high, open, close, volume], newest first. */
 export function parseCoinbase(rows: unknown): Candle[] {

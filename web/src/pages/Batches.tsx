@@ -46,7 +46,7 @@ function List() {
                   <th>Orders</th>
                   <th className="hide-sm">Revealed</th>
                   <th>Price <i>tUSDC</i></th>
-                  <th className="hide-sm">Matched <i>tAVAX</i></th>
+                  <th className="hide-sm">Matched <i>{cfg.base}</i></th>
                   <th className="hide-sm">Close</th>
                   <th className="acts" />
                 </tr>
@@ -124,7 +124,7 @@ function Detail({ id }: { id: bigint }) {
           <header>
             <img className="osum-art" src={x.state === 3 ? "/art/opened.webp" : "/art/hero.webp"} alt="" aria-hidden width={56} height={56} />
             <div>
-              <span className="label">Ofel L1 · tAVAX / tUSDC</span>
+              <span className="label">Ofel L1 · {cfg.base} / tUSDC</span>
               <h1>Batch #{x.id.toString()}</h1>
             </div>
             <BatchState state={x.state} price={x.price} />
@@ -155,7 +155,7 @@ function Detail({ id }: { id: bigint }) {
           <p className="verdict-note">
             {x.state === 3
               ? x.price > 0n
-                ? `${units(matched)} tAVAX crossed at one price. Totals are public, single sizes aren't: Σ commitments = total·G + blind·H.`
+                ? `${units(matched)} ${cfg.base} crossed at one price. Totals are public, single sizes aren't: Σ commitments = total·G + blind·H.`
                 : "Buyers' and sellers' limits did not cross; every bond comes back."
               : x.state === 2
                 ? "Validators signed the close: sides and limits are opening. Sizes stay sealed."

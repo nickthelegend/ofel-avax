@@ -5,6 +5,7 @@
 //  - Chainlink's AVAX/USD feed on Fuji as a thin step line behind them (it moves only when a round updates);
 //  - each Ofel batch clearing price as a marker on the candle it cleared in, with its batch number;
 //  - the limit you are typing in the ticket.
+import { cfg } from "../lib/config";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bucketOf, priceTicks, rangeOf, type Candle, type Round } from "../lib/candles";
 import type { Clear } from "../lib/market";
@@ -115,7 +116,7 @@ export function DeskChart({
           height={h}
           viewBox={`0 0 ${w} ${h}`}
           role="img"
-          aria-label="AVAX-USD candles with the Chainlink feed and Ofel batch clearing prices"
+          aria-label={`${cfg.market.product} candles with the Chainlink feed and Ofel batch clearing prices`}
           onMouseMove={(e) => {
             const b = e.currentTarget.getBoundingClientRect();
             const px = e.clientX - b.left;
@@ -151,7 +152,7 @@ export function DeskChart({
             <g key={c.batchId.toString()} className="cc-mark">
               <circle cx={x(i)} cy={y(c.price)} r={compact ? 3.5 : 5} />
               {!compact && labelled.has(i) && <text x={x(i)} y={y(c.price) - 10} textAnchor="middle">#{c.batchId.toString()}</text>}
-              <title>{`Ofel batch #${c.batchId} cleared at ${fmt(c.price, 2)} tUSDC per tAVAX`}</title>
+              <title>{`Ofel batch #${c.batchId} cleared at ${fmt(c.price, 2)} tUSDC per ${cfg.base}`}</title>
             </g>
           ))}
           {placed.map((t) => (

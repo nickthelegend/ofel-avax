@@ -18,15 +18,25 @@ export interface TicketDraft {
   limit: number | null;
 }
 
-const PRESETS = [100, 500, 1000, 2500];
-// Starting limits follow the live Chainlink AVAX/USD price: a buyer's cap 0.5% above it, a seller's floor 0.5% below,
+// Size presets and steps per market (sizes are eERC units with 2 decimals, so 0.01 is the smallest size).
+const SIZING: Record<string, { presets: number[]; def: string; step: number; limitStep: number }> = {
+  AVAX: { presets: [100, 500, 1000, 2500], def: "1000", step: 100, limitStep: 0.05 },
+  BTC: { presets: [0.05, 0.1, 0.2, 0.5], def: "0.20", step: 0.05, limitStep: 5 },
+  ETH: { presets: [0.5, 1, 2, 5], def: "2", step: 0.5, limitStep: 0.5 },
+};
+const SZ = SIZING[cfg.market.id] ?? SIZING.AVAX;
+const PRESETS = SZ.presets;
+// Starting limits follow the market's live Chainlink USD price: a buyer's cap 0.5% above it, a seller's floor 0.5% below,
 // so both cross the house's ±0.15% quote. Once you type a limit, it stays yours.
 const autoLimit = (side: Side, p?: number) => (p ? (side === BUY ? Math.ceil(p * 1.005 * 100) / 100 : Math.floor(p * 0.995 * 100) / 100).toFixed(2) : "");
-const SIZE_STEP = 100;
-const LIMIT_STEP = 0.05;
+const SIZE_STEP = SZ.step;
+const LIMIT_STEP = SZ.limitStep;
+const BASE = cfg.market.base;
+const fmtN = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0$/, ""));
 
 type Saved = Omit<SealResult, "batchId" | "closeAt"> & { batchId: string; closeAt: string };
-const keyOf = (a?: string) => `ofel.lastSeal.${cfg.network}.${a?.toLowerCase()}`;
+// Keyed by book too: batch #1 on the tBTC book is not batch #1 on the tAVAX book. The tAVAX book keeps the old key.
+const keyOf = (a?: string) => `ofel.lastSeal.${cfg.network}.${cfg.market.id === "AVAX" ? "" : cfg.book.toLowerCase() + "."}${a?.toLowerCase()}`;
 function loadSeal(a?: string): SealResult | undefined {
   try {
     const s = a && localStorage.getItem(keyOf(a));
@@ -50,7 +60,7 @@ export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batc
   const now = useNow();
   const setup = useSetupState();
   const [side, setSide] = useState<Side>(BUY);
-  const [size, setSize] = useState("1000");
+  const [size, setSize] = useState(SZ.def);
   const [typed, setTyped] = useState<string>();
   const limit = typed ?? autoLimit(side, refPrice);
   const setLimit = (v: string) => setTyped(v);
@@ -95,9 +105,9 @@ export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batc
   return (
     <aside className="pnl form" aria-label="Order ticket" data-film="ticket">
       <div className="form-head">
-        <Pair size={30} />
+        <Pair size={30} base={cfg.market.id} />
         <div>
-          <b>Block order · tAVAX</b>
+          <b>Block order · {BASE}</b>
           <small>{batch ? `Batch #${batch.id} · sealed until ${utc(batch.closeAt)}` : "Waiting for the next batch"}</small>
         </div>
       </div>
@@ -116,10 +126,10 @@ export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batc
         <label className="fld">
           <span>Size</span>
           <div className="fld-in">
-            <button type="button" className="step" aria-label={`${SIZE_STEP} tAVAX less`} onClick={() => setSize(String(Math.max(0, n - SIZE_STEP)))}>−</button>
-            <input id="size" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} aria-label="Size in tAVAX" aria-invalid={size !== "" && !sizeU} />
-            <em>tAVAX</em>
-            <button type="button" className="step" aria-label={`${SIZE_STEP} tAVAX more`} onClick={() => setSize(String(n + SIZE_STEP))}>+</button>
+            <button type="button" className="step" aria-label={`${SIZE_STEP} ${BASE} less`} onClick={() => setSize(fmtN(Math.max(0, n - SIZE_STEP)))}>−</button>
+            <input id="size" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} aria-label={`Size in ${BASE}`} aria-invalid={size !== "" && !sizeU} />
+            <em>{BASE}</em>
+            <button type="button" className="step" aria-label={`${SIZE_STEP} ${BASE} more`} onClick={() => setSize(fmtN(n + SIZE_STEP))}>+</button>
           </div>
           <div className="chips chips-4">
             {PRESETS.map((v) => (
@@ -132,13 +142,13 @@ export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batc
         <label className="fld">
           <span>{side === BUY ? "Limit · pay at most" : "Limit · receive at least"}</span>
           <div className="fld-in">
-            <button type="button" className="step" aria-label="0.05 lower" onClick={() => setLimit(Math.max(0, lim - LIMIT_STEP).toFixed(2))}>−</button>
-            <input id="limit" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-label="Limit in tUSDC per tAVAX" aria-invalid={limit !== "" && !limitU} />
+            <button type="button" className="step" aria-label={`${LIMIT_STEP} lower`} onClick={() => setLimit(Math.max(0, lim - LIMIT_STEP).toFixed(2))}>−</button>
+            <input id="limit" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-label={`Limit in tUSDC per ${BASE}`} aria-invalid={limit !== "" && !limitU} />
             <em>tUSDC</em>
-            <button type="button" className="step" aria-label="0.05 higher" onClick={() => setLimit((lim + LIMIT_STEP).toFixed(2))}>+</button>
+            <button type="button" className="step" aria-label={`${LIMIT_STEP} higher`} onClick={() => setLimit((lim + LIMIT_STEP).toFixed(2))}>+</button>
           </div>
           <small className="dim">
-            {refPrice ? <>Chainlink AVAX/USD {refPrice.toFixed(3)}{typed !== undefined && <> · <button type="button" className="link" onClick={() => setTyped(undefined)}>follow it</button></>}</> : "Waiting for the Chainlink price…"}
+            {refPrice ? <>Chainlink {cfg.market.id}/USD {refPrice.toFixed(cfg.market.id === "AVAX" ? 3 : 2)}{typed !== undefined && <> · <button type="button" className="link" onClick={() => setTyped(undefined)}>follow it</button></>}</> : "Waiting for the Chainlink price…"}
             {lastClear && <> · last clear {lastClear.price.toFixed(2)} (#{lastClear.batchId.toString()})</>}
           </small>
         </label>
@@ -182,6 +192,9 @@ export function Ticket({ batch, lastClear, refPrice, onDraft, onSealed }: { batc
               </>
             )}
           </button>
+        )}
+        {side === SELL && cfg.market.id !== "AVAX" && (
+          <p className="form-note" role="note">Selling pays {BASE} in from your private eERC balance. The faucet gives tAVAX and tUSDC only, so a new test wallet has no {BASE} to sell until it buys some here.</p>
         )}
         {err && <p className="sheet-err" role="alert">{err}</p>}
         {done && <OrderStatus done={done} onClear={() => setDone(undefined)} />}
@@ -293,7 +306,7 @@ function OrderStatus({ done, onClear }: { done: SealResult; onClear: () => void 
           {busy === "bond" ? "Claiming…" : "Claim the 0.10 OFEL bond"}
         </button>
       )}
-      {t.data?.paid && st === 5 && <small className="dim">Pay-in <Hash v={t.data.paid} /> · the agent pays {row?.mine.side === BUY ? "tAVAX" : "tUSDC"} out next</small>}
+      {t.data?.paid && st === 5 && <small className="dim">Pay-in <Hash v={t.data.paid} /> · the agent pays {row?.mine.side === BUY ? BASE : "tUSDC"} out next</small>}
       {(err || t.error) && <p className="sheet-err" role="alert">{err ?? t.error}</p>}
       {short(done.commitment) && <small className="dim mono">size commitment {short(done.commitment, 6)}</small>}
     </div>

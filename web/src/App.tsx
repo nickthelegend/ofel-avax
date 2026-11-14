@@ -157,7 +157,7 @@ export function App() {
           <i className="live" />
           Chain reads: Ofel L1 {cfg.chainId} · P-Chain Fuji
         </span>
-        <span>Reference: Chainlink AVAX/USD on Fuji · Coinbase</span>
+        <span>Reference: Chainlink {cfg.market.id}/USD on Fuji · Coinbase · market {cfg.market.base} / tUSDC</span>
         <span>Private balances: eERC (Ava Labs)</span>
                 <span>UI forked from Eidolon · art generated with ChatGPT</span>
       </footer>

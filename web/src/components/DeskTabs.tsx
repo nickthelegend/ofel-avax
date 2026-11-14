@@ -79,7 +79,7 @@ function Tape({ clears, err }: { clears?: Clear[]; err?: string }) {
             <th>Cleared</th>
             <th>Batch</th>
             <th>Price <i>tUSDC</i></th>
-            <th>Matched <i>tAVAX</i></th>
+            <th>Matched <i>{cfg.base}</i></th>
             <th className="hide-sm">Buy total</th>
             <th className="hide-sm">Sell total</th>
             <th>Fills</th>

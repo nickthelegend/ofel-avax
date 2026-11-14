@@ -11,11 +11,11 @@ import { short, utc } from "../lib/format";
 import { Hash, Icon, Link, Skel, State } from "../components/ui";
 
 const LABELS: [string | undefined, string][] = [
-  [cfg.book, "OfelBook"],
+  ...cfg.markets.map((m) => [m.book, `OfelBook · ${m.base} / tUSDC`] as [string, string]),
   [cfg.eerc, "EncryptedERC (eERC)"],
   [cfg.registrar, "eERC registrar"],
   [cfg.faucet, "OfelFaucet"],
-  [cfg.tAVAX, "tAVAX (test token)"],
+  ...cfg.markets.map((m) => [m.token, `${m.base} (test token)`] as [string, string]),
   [cfg.tUSDC, "tUSDC (test token)"],
   [cfg.agent, "Clearing agent + auditor"],
   [cfg.house, "House (blind quotes)"],
@@ -23,10 +23,10 @@ const LABELS: [string | undefined, string][] = [
 ];
 const labelOf = (a?: string | null) => (a ? LABELS.find(([x]) => x && x.toLowerCase() === a.toLowerCase())?.[1] : undefined);
 const ABIS: [string | undefined, Abi][] = [
-  [cfg.book, bookAbi],
+  ...cfg.markets.map((m) => [m.book, bookAbi] as [string, Abi]),
   [cfg.eerc, eercAbi],
   [cfg.registrar, registrarAbi as Abi],
-  [cfg.tAVAX, erc20Abi as Abi],
+  ...cfg.markets.map((m) => [m.token, erc20Abi as Abi] as [string, Abi]),
   [cfg.tUSDC, erc20Abi as Abi],
 ];
 const abiOf = (a?: string | null) => (a ? ABIS.find(([x]) => x && x.toLowerCase() === a.toLowerCase())?.[1] : undefined);

@@ -101,10 +101,22 @@ export function UsdcDisc({ size = 28 }: { size?: number }) {
   );
 }
 
-export function Pair({ size = 30 }: { size?: number }) {
+/** A market's test base asset: the AVAX disc, or a plain coloured disc with the asset's mark (tBTC, tETH). */
+export function BaseDisc({ id, size = 28 }: { id: string; size?: number }) {
+  if (id === "AVAX") return <AvaxDisc size={size} />;
+  const [fill, mark] = id === "BTC" ? ["#f7931a", "₿"] : id === "ETH" ? ["#627eea", "Ξ"] : ["#55606e", id.slice(0, 1)];
+  return (
+    <svg className="tok" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill={fill} />
+      <text x="16" y="21.5" textAnchor="middle" fontSize="16" fontWeight="700" fill="#fff" fontFamily="system-ui, sans-serif">{mark}</text>
+    </svg>
+  );
+}
+
+export function Pair({ size = 30, base = "AVAX" }: { size?: number; base?: string }) {
   return (
     <span className="pair-discs" style={{ width: size * 1.6, height: size }}>
-      <AvaxDisc size={size} />
+      <BaseDisc id={base} size={size} />
       <UsdcDisc size={size} />
     </span>
   );

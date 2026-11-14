@@ -11,7 +11,9 @@ import { myOrders, type MyRow } from "../lib/orders";
 import { claimBond, payIn, payInLeg, payInOnChain } from "../lib/settle";
 import { fix, ofelClears, priced, type Clear } from "../lib/market";
 import { useWallet } from "../lib/wallet";
-import { Amount, AvaxDisc, Hash, Icon, Link, Skel, State, StatusPill, UsdcDisc } from "../components/ui";
+import { erc20Abi } from "viem";
+import { client } from "../lib/chain";
+import { Amount, BaseDisc, Hash, Icon, Link, Skel, State, StatusPill, UsdcDisc } from "../components/ui";
 
 /** A test wallet signs locally, so its orders and balances decrypt without a prompt; a browser wallet asks first. */
 function useAutoUnlock(): [boolean, () => void] {
@@ -38,8 +40,18 @@ export function PrivateBalances({ lastClear }: { lastClear?: Clear }) {
       if (!w.client || !w.address || !unlocked) return undefined;
       if (!(await isRegistered(w.address))) return { registered: false as const };
       const e = await eercFor(w.client);
-      const [a, u] = await Promise.all([privateBalance(e, w.address, cfg.tAVAX), privateBalance(e, w.address, cfg.tUSDC)]);
-      return { registered: true as const, a, u };
+      // Every market's base asset plus tUSDC. A token the eERC has not seen yet (no deposit so far) reads as zero.
+      const assets = [...cfg.markets.map((m) => ({ id: m.id, sym: m.base, token: m.token, decimals: m.decimals })), { id: "USDC", sym: "tUSDC", token: cfg.tUSDC, decimals: 6 }];
+      const rows = await Promise.all(
+        assets.map(async (x) => {
+          const [priv, pub] = await Promise.all([
+            privateBalance(e, w.address!, x.token).catch(() => ({ decrypted: 0n, encrypted: [0n] })),
+            client.readContract({ address: x.token, abi: erc20Abi, functionName: "balanceOf", args: [w.address!] }) as Promise<bigint>,
+          ]);
+          return { ...x, priv, pub };
+        }),
+      );
+      return { registered: true as const, rows };
     },
     [w.address, unlocked],
     10000,
@@ -60,30 +72,28 @@ export function PrivateBalances({ lastClear }: { lastClear?: Clear }) {
       </div>
     );
   if (!bal.data.registered) return <State kind="setup" title="No private balance yet">Seal your first order: the ticket gets test funds and registers this wallet's eERC key.</State>;
-  const value = lastClear ? Number(bal.data.a.decrypted) / 100 * lastClear.price + Number(bal.data.u.decrypted) / 100 : null;
+  const cur = bal.data.rows.find((r) => r.id === cfg.market.id);
+  const usdc = bal.data.rows.find((r) => r.id === "USDC");
+  const value = lastClear && cur && usdc ? (Number(cur.priv.decrypted) / 100) * lastClear.price + Number(usdc.priv.decrypted) / 100 : null;
+  const pubFmt = (v: bigint, d: number) => (Number(v) / 10 ** d).toLocaleString("en-US", { maximumFractionDigits: 2 });
   return (
-    <div className="bal-grid" data-film="balances">
-      <div className="bal">
-        <AvaxDisc size={34} />
-        <div>
-          <span className="label">tAVAX · private</span>
-          <b><Amount v={bal.data.a.decrypted} /></b>
-          <code className="dim">on chain: {bal.data.a.encrypted[0].toString(16).slice(0, 18)}…</code>
+    <div className="bal-grid bal-grid-n" data-film="balances">
+      {bal.data.rows.map((r) => (
+        <div className="bal" key={r.id}>
+          {r.id === "USDC" ? <UsdcDisc size={34} /> : <BaseDisc id={r.id} size={34} />}
+          <div>
+            <span className="label">{r.sym} · private</span>
+            <b><Amount v={r.priv.decrypted} /></b>
+            <code className="dim">on chain: {r.priv.encrypted[0] ? `${r.priv.encrypted[0].toString(16).slice(0, 18)}…` : "no eERC balance yet"}</code>
+            <small className="dim">public wallet: {pubFmt(r.pub, r.decimals)}</small>
+          </div>
         </div>
-      </div>
-      <div className="bal">
-        <UsdcDisc size={34} />
-        <div>
-          <span className="label">tUSDC · private</span>
-          <b><Amount v={bal.data.u.decrypted} /></b>
-          <code className="dim">on chain: {bal.data.u.encrypted[0].toString(16).slice(0, 18)}…</code>
-        </div>
-      </div>
+      ))}
       <div className="bal bal-sum">
         <div>
-          <span className="label">Worth at the last clear</span>
+          <span className="label">tUSDC + {cfg.base} at the last clear</span>
           <b className="num">{value != null ? `${fix(value)} tUSDC` : "—"}</b>
-          <small className="dim">{lastClear ? `tAVAX at ${fix(lastClear.price)}, batch #${lastClear.batchId}` : "no clear yet"}</small>
+          <small className="dim">{lastClear ? `${cfg.base} at ${fix(lastClear.price)}, batch #${lastClear.batchId}` : "no clear yet"}</small>
         </div>
       </div>
     </div>
@@ -189,7 +199,7 @@ export function MyOrdersTable({ refreshKey = 0, lastClear }: { refreshKey?: numb
           <tr>
             <th>Batch</th>
             <th>Side</th>
-            <th>Size <i>tAVAX</i></th>
+            <th>Size <i>{cfg.base}</i></th>
             <th className="hide-sm">Limit <i>tUSDC</i></th>
             <th>Fill</th>
             <th className="hide-sm">Notional <i>tUSDC</i></th>

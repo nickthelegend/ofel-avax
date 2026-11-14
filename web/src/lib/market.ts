@@ -1,17 +1,20 @@
 // Market data for the desk header and chart. Every number is real and labelled with where it comes from:
-//  - AVAX/USD reference: Chainlink's AVAX/USD feed on Avalanche Fuji (C-Chain), read with latestRoundData / getRoundData.
-//  - Exchange candles: Coinbase Exchange AVAX-USD, falling back to Binance AVAXUSDT (see candles.ts).
-//  - Ofel clears: BatchCleared events from OfelBook on the Ofel L1 (tAVAX/tUSDC, the L1's own test pair).
+//  - USD reference: the current market's Chainlink feed on Avalanche Fuji (AVAX/USD, BTC/USD or ETH/USD), read with
+//    latestRoundData / getRoundData.
+//  - Exchange candles: Coinbase Exchange (AVAX-USD, BTC-USD, ETH-USD), falling back to Binance (see candles.ts).
+//  - Ofel clears: BatchCleared events from the current market's OfelBook on the Ofel L1 (tAVAX, tBTC or tETH vs tUSDC).
 import { createPublicClient, http, parseAbiItem, type PublicClient } from "viem";
 import { avalancheFuji } from "viem/chains";
-import { cfg } from "./config";
+import { cfg, type Market } from "./config";
 import { client } from "./chain";
 import { chainlinkRounds, type Round } from "./candles";
 
 export const FUJI_RPC = "https://avalanche-fuji-c-chain-rpc.publicnode.com";
-/** Chainlink AVAX/USD on Avalanche Fuji (docs.chain.link, Avalanche testnet feeds). */
-export const AVAX_USD_FEED = "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD" as const;
-export const feedUrl = `https://testnet.snowtrace.io/address/${AVAX_USD_FEED}`;
+/** The current market's Chainlink USD feed on Avalanche Fuji (docs.chain.link, Avalanche testnet feeds). */
+export const USD_FEED = cfg.market.feed;
+export const feedUrl = `https://testnet.snowtrace.io/address/${USD_FEED}`;
+/** "Chainlink BTC/USD" for the current market. */
+export const feedName = `Chainlink ${cfg.market.id}/USD`;
 
 export const fuji = createPublicClient({ chain: avalancheFuji, transport: http(FUJI_RPC) }) as PublicClient;
 
@@ -22,16 +25,16 @@ export interface Reference {
 }
 
 export async function chainlinkAvax(count = 24): Promise<Reference> {
-  const rounds = await chainlinkRounds(fuji, AVAX_USD_FEED, count);
+  const rounds = await chainlinkRounds(fuji, USD_FEED, count);
   const last = rounds[rounds.length - 1];
-  if (!last) throw new Error("Chainlink AVAX/USD returned no rounds");
+  if (!last) throw new Error(`${feedName} returned no rounds`);
   return { price: last.price, updatedAt: last.ts, rounds };
 }
 
 export interface Clear {
   batchId: bigint;
   ts: number;
-  price: number; // tUSDC per tAVAX
+  price: number; // tUSDC per unit of the market's base
   priceU: bigint; // 0.01 units
   buyTotal: bigint;
   sellTotal: bigint;
@@ -66,3 +69,20 @@ export const priced = (c: { batchId: bigint }) => c.batchId >= cfg.repricedFrom;
 
 export const usd = (v: number | undefined | null, dp = 2) => (v == null || !Number.isFinite(v) ? "—" : `$${v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp })}`);
 export const fix = (v: number, dp = 2) => v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+
+const latestAbi = [{ type: "function", name: "latestRoundData", stateMutability: "view", inputs: [], outputs: [{ type: "uint80" }, { type: "int256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint80" }] }] as const;
+
+/** Latest answer of every market's Chainlink feed on Fuji (8 decimals), with its update time. A failed read is an error row. */
+export async function marketPrices(markets: Market[]): Promise<{ id: string; price?: number; updatedAt?: number; error?: string }[]> {
+  return Promise.all(
+    markets.map(async (m) => {
+      try {
+        const [, answer, , updatedAt] = await fuji.readContract({ address: m.feed, abi: latestAbi, functionName: "latestRoundData" });
+        if (answer <= 0n) return { id: m.id, error: "no answer" };
+        return { id: m.id, price: Number(answer) / 1e8, updatedAt: Number(updatedAt) };
+      } catch (e) {
+        return { id: m.id, error: (e as Error).message.split("\n")[0].slice(0, 80) };
+      }
+    }),
+  );
+}

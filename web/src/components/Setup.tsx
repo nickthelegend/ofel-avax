@@ -24,7 +24,7 @@ async function readiness(me: Hex): Promise<Readiness> {
     client.getBalance({ address: me }),
     cfg.faucet ? (client.readContract({ address: cfg.faucet, abi: faucetAbi, functionName: "claimed", args: [me] }) as Promise<boolean>) : Promise.resolve(true),
     isRegistered(me),
-    client.readContract({ address: cfg.tAVAX, abi: erc20Abi, functionName: "balanceOf", args: [me] }),
+    client.readContract({ address: cfg.avaxToken, abi: erc20Abi, functionName: "balanceOf", args: [me] }),
     client.readContract({ address: cfg.tUSDC, abi: erc20Abi, functionName: "balanceOf", args: [me] }),
   ]);
   return { gas, claimed, registered, publicA, publicU };
@@ -69,7 +69,7 @@ export function SetupSteps({ state }: { state: ReturnType<typeof useSetupState> 
         const r = await e.register();
         if (r.transactionHash) await client.waitForTransactionReceipt({ hash: r.transactionHash as Hex });
       }
-      for (const [token, amount, sym] of [[cfg.tUSDC, cur.publicU, "tUSDC"], [cfg.tAVAX, cur.publicA, "tAVAX"]] as const) {
+      for (const [token, amount, sym] of [[cfg.tUSDC, cur.publicU, "tUSDC"], [cfg.avaxToken, cur.publicA, "tAVAX"]] as const) {
         if (amount === 0n) continue;
         setStep(`Depositing ${sym} into your private balance…`);
         const a = await w.client.writeContract({ address: token, abi: erc20Abi, functionName: "approve", args: [cfg.eerc, amount], account: w.client.account, chain: undefined });
