@@ -13,6 +13,7 @@ import { Portfolio } from "./pages/Portfolio";
 import { Auditor } from "./pages/Auditor";
 import { Validators } from "./pages/Validators";
 import { Tx } from "./pages/Tx";
+import { Sandwich } from "./pages/Sandwich";
 
 const NAV = [
   { to: "/desk", label: "Desk" },
@@ -20,9 +21,10 @@ const NAV = [
   { to: "/portfolio", label: "Portfolio" },
   { to: "/validators", label: "Validators" },
   { to: "/auditor", label: "Auditor" },
+  { to: "/sandwich", label: "Sandwich lab" },
 ];
 
-const TITLES: Record<string, string> = { desk: "Desk", batches: "Batches", portfolio: "Portfolio", validators: "Validators", auditor: "Auditor", tx: "Transaction" };
+const TITLES: Record<string, string> = { desk: "Desk", batches: "Batches", portfolio: "Portfolio", validators: "Validators", auditor: "Auditor", tx: "Transaction", sandwich: "Sandwich lab" };
 
 function WalletButton() {
   const w = useWallet();
@@ -119,7 +121,7 @@ export function App() {
 
   if (path === "/") return <div className="site"><a className="skip" href="#main">Skip to content</a><Landing /></div>;
 
-  const page = path.startsWith("/desk") ? <Desk /> : path.startsWith("/batches") ? <Batches path={path} /> : path.startsWith("/portfolio") ? <Portfolio /> : path.startsWith("/auditor") ? <Auditor /> : path.startsWith("/validators") ? <Validators /> : path.startsWith("/tx/") ? <Tx path={path} /> : null;
+  const page = path.startsWith("/desk") ? <Desk /> : path.startsWith("/batches") ? <Batches path={path} /> : path.startsWith("/portfolio") ? <Portfolio /> : path.startsWith("/auditor") ? <Auditor /> : path.startsWith("/validators") ? <Validators /> : path.startsWith("/tx/") ? <Tx path={path} /> : path.startsWith("/sandwich") ? <Sandwich /> : null;
   return (
     <div className="app">
       <a className="skip" href="#main">Skip to content</a>

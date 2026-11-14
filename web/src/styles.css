@@ -1091,3 +1091,17 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
 .cmp-trade-card { position: relative; padding-right: 150px !important; }
 .cmp-trade-art { position: absolute; right: 14px; top: 14px; width: 128px; height: 128px; border-radius: 22px; background: radial-gradient(60% 60% at 50% 45%, rgba(214, 140, 100, .22), transparent 70%), #000; padding: 8px; }
 @media (max-width: 640px) { .emap-head { padding-left: 70px; } .emap-art { width: 62px; height: 62px; } .cmp-trade-card { padding-right: 24px !important; padding-top: 110px !important; } .cmp-trade-art { width: 84px; height: 84px; left: 20px; right: auto; } }
+
+/* Sandwich lab */
+.sw-banner { border-radius: 12px; text-align: left; justify-content: flex-start; }
+.sw-victim { background: var(--accent-soft); color: var(--accent); }
+.sw-plain { background: var(--surface-3); color: var(--muted); }
+.sw-note { font-size: 13px; overflow-wrap: anywhere; margin-top: -18px; }
+.sw-ofel { padding: 20px 22px; display: grid; gap: 12px; }
+.sw-ofel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sw-read { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
+.sw-read div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); min-width: 0; }
+.sw-read dt { color: var(--muted); font-size: 13px; flex: none; }
+.sw-read dd { margin: 0; text-align: right; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.sw-read .sw-no dd { color: var(--up); font-weight: 700; }
+@media (max-width: 760px) { .sw-read { grid-template-columns: 1fr; } .sw-read div { flex-direction: column; gap: 4px; } .sw-read dd { text-align: left; } }
