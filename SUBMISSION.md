@@ -52,7 +52,7 @@ Fuji L1; Playwright for QA.
   Contract addresses and every recorded tx hash: README "Live deployment (Fuji)" and `deployments/fuji-l1.json`.
   No hosted explorer indexes the L1's own EVM txs; check them with `cast receipt` on that RPC, or on the desk's
   Batches pages.
-- **Repo:** (to be pushed by Nick).
+- **Repo:** https://github.com/nickthelegend/ofel-avax
 - **Demo video:** (link to be added after upload). Two cuts of one live take, recorded on the hosted desk on Nov 13
   (~22:24-22:29 UTC) from a brand-new test wallet, in `grokbot/videos/ofel-avax/`:
   - **Submission cut** `ofel-avax-film.mp4` (2:59, 1080p; `ofel-avax-film-share.mp4` 720p, 9.1 MB), v17 of the round
