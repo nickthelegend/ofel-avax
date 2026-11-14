@@ -183,6 +183,7 @@ function EnvelopeMap({ env, c, batch }: { env: Hex; c?: Hex; batch: bigint }) {
   return (
     <div className="emap" data-film="envelope-map" ref={ref} data-step={step}>
       <div className="emap-head">
+        <img className="emap-art" src="/art/vault.webp" alt="" aria-hidden width={640} height={640} />
         <span className="label">Inside one sealed order · batch #{batch.toString()} · read live from OfelBook</span>
         <b className="num">{bytesOf(env).toLocaleString("en-US")} bytes, none of them readable before the close</b>
       </div>
@@ -368,7 +369,8 @@ export function Compare() {
         </div>
       </div>
       <div className="cmp-trade">
-        <div>
+        <div className="cmp-trade-card">
+          <img className="cmp-trade-art" src="/art/key.webp" alt="" aria-hidden width={640} height={640} />
           <h3>Ofel's trade-offs, plainly</h3>
           <ul>
             <li><b>The seal is 2 of 3.</b> Two colluding validators could sign the close early. All three run on one VPS today, so in practice that's one operator; production needs independent ones.</li>

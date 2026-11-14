@@ -1085,3 +1085,9 @@ button.back { background: none; border: 0; padding: 0; font: inherit; font-weigh
 .emap[data-step="3"] .emap-seg:not(.emap-mine), .emap[data-step="3"] .emap-legend li:not(.emap-mine),
 .emap[data-step="4"] .emap-seg, .emap[data-step="4"] .emap-legend li:not(.emap-c) { opacity: .28; }
 .emap[data-step="1"] .emap-share, .emap[data-step="2"] .emap-ct, .emap[data-step="3"] .emap-mine, .emap[data-step="4"] li.emap-c { box-shadow: 0 0 0 2px #f0b9a0, 0 0 28px rgba(240, 185, 160, .45); transform: translateY(-2px); }
+/* art in the byte map's header and on the trade-offs card (same obsidian kit) */
+.emap-head { position: relative; padding-left: 92px; min-height: 64px; align-items: center; }
+.emap-art { position: absolute; left: -6px; top: 50%; width: 84px; height: 84px; transform: translateY(-50%); filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5)); }
+.cmp-trade-card { position: relative; padding-right: 150px !important; }
+.cmp-trade-art { position: absolute; right: 14px; top: 14px; width: 128px; height: 128px; border-radius: 22px; background: radial-gradient(60% 60% at 50% 45%, rgba(214, 140, 100, .22), transparent 70%), #000; padding: 8px; }
+@media (max-width: 640px) { .emap-head { padding-left: 70px; } .emap-art { width: 62px; height: 62px; } .cmp-trade-card { padding-right: 24px !important; padding-top: 110px !important; } .cmp-trade-art { width: 84px; height: 84px; left: 20px; right: auto; } }
