@@ -103,6 +103,40 @@ async function readOfel() {
   return { hash, trader: tx.from, block: tx.blockNumber, batchId, commitment, cx, cy, envelope, closeAt: b.closeAt, state: b.state, orders: b.orderCount };
 }
 
+
+// The public mempool as the bot reads it: pending transactions to the pool, decoded from their calldata (Anvil's
+// txpool_content). Rows stay listed after they are mined, marked with their block.
+const swapAbi = parseAbi(["function swapExactIn(address tokenIn, uint256 amountIn, uint256 minOut, address to)"]);
+interface PendingRow { hash: Hex; from: Hex; buy: boolean; amountIn: bigint; minOut: bigint; tip: bigint; seenAt: number; block?: bigint }
+const seenPending = new Map<Hex, PendingRow>();
+let token0: Hex | undefined;
+async function readMempool(): Promise<PendingRow[]> {
+  if (!POOL) return [];
+  token0 ??= (await anvil.readContract({ address: POOL, abi: poolAbi, functionName: "token0" })) as Hex;
+  type PTx = { hash: Hex; from: Hex; to: Hex | null; input: Hex; maxPriorityFeePerGas?: Hex; gasPrice?: Hex };
+  const c = (await anvil.request({ method: "txpool_content" as never })) as unknown as { pending?: Record<string, Record<string, PTx>> };
+  const live = new Set<Hex>();
+  for (const byNonce of Object.values(c.pending ?? {}))
+    for (const tx of Object.values(byNonce)) {
+      if (!tx.to || tx.to.toLowerCase() !== POOL.toLowerCase()) continue;
+      live.add(tx.hash);
+      if (seenPending.has(tx.hash)) continue;
+      try {
+        const d = decodeFunctionData({ abi: swapAbi, data: tx.input });
+        const [tokenIn, amountIn, minOut] = d.args as unknown as [Hex, bigint, bigint];
+        seenPending.set(tx.hash, { hash: tx.hash, from: tx.from, buy: tokenIn.toLowerCase() !== token0.toLowerCase(), amountIn, minOut, tip: BigInt(tx.maxPriorityFeePerGas ?? tx.gasPrice ?? "0x0"), seenAt: Date.now() });
+      } catch {
+        /* not a swap */
+      }
+    }
+  for (const r of seenPending.values())
+    if (!live.has(r.hash) && r.block === undefined) {
+      const rc = await anvil.getTransactionReceipt({ hash: r.hash }).catch(() => undefined);
+      if (rc) r.block = rc.blockNumber;
+    }
+  return [...seenPending.values()].sort((a, b) => b.seenAt - a.seenAt).slice(0, 6);
+}
+
 const ROLE: Record<SwapRow["role"], { label: string; cls: string }> = {
   front: { label: "Bot front-run", cls: "spill spill-down" },
   victim: { label: "Victim", cls: "spill sw-victim" },
@@ -155,6 +189,7 @@ function SwapTable({ list }: { list: SwapRow[] }) {
 export function Sandwich() {
   const p = useLive(readPool, [], 2000);
   const o = useLive(readOfel, [], 4000);
+  const mp = useLive(readMempool, [], 400);
   const latestSandwich = p.data?.blocks.find((b) => b.list.some((r) => r.role === "victim"));
   const v = latestSandwich?.list.find((r) => r.role === "victim");
   const f = latestSandwich?.list.find((r) => r.role === "front");
@@ -177,6 +212,38 @@ export function Sandwich() {
       <p className="banner banner-demo sw-banner" data-film="sandwich-banner">
         AMM side: local Anvil fork of Fuji C-Chain, block time 4 s, public test keys. Ofel side: the live Ofel L1 on Fuji. Every number read from the chain.
       </p>
+
+      {mp.data && mp.data.length > 0 && (
+        <section className="order-sec" data-film="sandwich-mempool">
+          <h2>The public mempool, as the bot reads it <small className="dim">pending swaps decoded from their calldata · fee orders the block</small></h2>
+          <div className="tbl-wrap">
+            <table className="tbl sw-tbl">
+              <thead>
+                <tr>
+                  <th>Seen</th>
+                  <th>From</th>
+                  <th>Swap <i>read from calldata</i></th>
+                  <th>Min out</th>
+                  <th>Tip <i>gwei</i></th>
+                  <th>State</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mp.data.map((r) => (
+                  <tr key={r.hash} className={who(r.from) === "victim" ? "sel" : ""}>
+                    <td className="mono">{new Date(r.seenAt).toISOString().slice(11, 23)}</td>
+                    <td className="mono">{short(r.from, 4)}<small>{who(r.from)}</small></td>
+                    <td className="num">{r.buy ? "Buy tAVAX with" : "Sell"} {usd(n18(r.amountIn))} {r.buy ? "tUSDC" : "tAVAX"}</td>
+                    <td className="num">{usd(n18(r.minOut))} {r.buy ? "tAVAX" : "tUSDC"}</td>
+                    <td className="num">{(Number(r.tip) / 1e9).toFixed(0)}</td>
+                    <td>{r.block === undefined ? <span className="spill sw-victim">Pending</span> : <span className="spill sw-plain">In block #{r.block.toString()}</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {p.error && (
         <div className="pnl">
