@@ -53,17 +53,16 @@ Fuji L1; Playwright for QA.
   No hosted explorer indexes the L1's own EVM txs; check them with `cast receipt` on that RPC, or on the desk's
   Batches pages.
 - **Repo:** https://github.com/nickthelegend/ofel-avax
-- **Demo video:** (link to be added after upload). Two cuts of one live take, recorded on the hosted desk on Nov 13
-  (~22:24-22:29 UTC) from a brand-new test wallet, in `grokbot/videos/ofel-avax/`:
-  - **Submission cut** `ofel-avax-film.mp4` (2:59, 1080p; `ofel-avax-film-share.mp4` 720p, 9.1 MB), v17 of the round
-    (independent judge 8.7/10). It opens on the landing (why a sealed book: a labelled front-running illustration next to
-    the live sealed book; one real sealed order byte by byte; the sourced comparison and Ofel's trade-offs), then the live
-    run on batch #1165: test funds, the seal, an early open refused by the contract and all three validators, validator 3
-    switched off on purpose, the batch opening with 2 of 3 BLS signatures, one price (8.21, public totals 1,198 / 1,904),
-    the signature check, a private eERC pay-in; the desk's own L1 explorer page for the seal and the pay-in; `cast
-    receipt` of the seal, the clear (its log decoded with `cast abi-decode`) and the pay-in from the public RPC; and the
-    ConvertSubnetToL1Tx on Avalanche's explorer.
-  - **Full walkthrough** `ofel-avax-walkthrough.mp4` (4:43), the same take with every landing section, the clear's tx
-    page, the auditor view and the Validators page (v17, independent judge 8.7/10).
-  The take's transactions and the validator-3 stop/start are in `deployments/fuji-l1.json` → `filmV10Run`. Every version
+- **Demo video:** (link to be added after upload), in `grokbot/videos/ofel-avax/`:
+  - **Film** `ofel-avax-film.mp4` (4:59.6, 1080p, voice only, no music; `ofel-avax-film-share.mp4` 720p, 9.97 MB), v18 of
+    round 5. It opens on the live landing, then the sandwich lab on a local Anvil fork of Fuji (a demo pool and a real
+    mempool-reading bot: front-run, victim, back-run in one block, the victim 224.48 tUSDC over its quote, the bot +156.46)
+    and the same reading on the Ofel L1 (hash, commitment, ciphertext); the seal explained (what the browser encrypts, what
+    the chain stores, the Warp-message key, 2 of 3 signatures at the close, the trade-offs); the live trade of Nov 13 on
+    batch #1165 (test funds, seal, early open refused, validator 3 off, 2 of 3 open, one price 8.21, signatures, private
+    pay-in); today's tBTC batch #8 and tETH batch #8 on the three-market desk; the desk's L1 explorer, `cast receipt`s
+    from the public RPC and the ConvertSubnetToL1Tx on Avalanche's explorer.
+  - **Full walkthrough** `ofel-avax-walkthrough.mp4` (4:43, v17) and the earlier 2:59 cut (v17, `versions/`).
+  The take's transactions and the validator-3 stop/start are in `deployments/fuji-l1.json` → `filmV10Run`; today's
+  market batches in `filmV18Run`. Every version
   and its judge notes: `grokbot/videos/ofel-avax/versions/` and `videos/ofel-avax/film/JUDGE-v*.md`.
