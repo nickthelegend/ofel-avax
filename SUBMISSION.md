@@ -55,7 +55,7 @@ Fuji L1; Playwright for QA.
 - **Repo:** (to be pushed by Nick).
 - **Demo video:** (link to be added after upload). Two cuts of one live take, recorded on the hosted desk on Nov 13
   (~22:24-22:29 UTC) from a brand-new test wallet, in `grokbot/videos/ofel-avax/`:
-  - **Submission cut** `ofel-avax-film.mp4` (2:58, 1080p; `ofel-avax-film-share.mp4` 720p, 9.1 MB), v15 of the round
+  - **Submission cut** `ofel-avax-film.mp4` (2:59, 1080p; `ofel-avax-film-share.mp4` 720p, 9.1 MB), v17 of the round
     (independent judge 8.7/10). It opens on the landing (why a sealed book: a labelled front-running illustration next to
     the live sealed book; one real sealed order byte by byte; the sourced comparison and Ofel's trade-offs), then the live
     run on batch #1165: test funds, the seal, an early open refused by the contract and all three validators, validator 3
