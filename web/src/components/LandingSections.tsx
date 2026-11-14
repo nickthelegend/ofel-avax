@@ -67,9 +67,9 @@ function PublicBook() {
         <li className="pb-mid"><span>spread</span></li>
         {ph >= 1 && ph < 5 && (
           <li className="pb-bid pb-whale pb-new">
-            <span className="num">8.40</span>
+            <span className="num">≤8.45</span>
             <span className="num">1,000</span>
-            <em><Icon name="eye" size={13} /> Fund's block buy · everyone sees it</em>
+            <em><Icon name="eye" size={13} /> Fund's block buy, up to 8.45 · everyone sees it</em>
           </li>
         )}
         {BIDS.map(([p, s]) => (
@@ -78,10 +78,10 @@ function PublicBook() {
       </ol>
       <p className="pb-cap">
         {ph === 0 && "A quiet book. Last trade 8.34."}
-        {ph === 1 && "A fund posts a 1,000 buy. Everyone can see it."}
+        {ph === 1 && "A fund posts a 1,000 buy, up to 8.45. Everyone can see it."}
         {ph === 2 && "Bots see it first and buy the cheap offers ahead of it."}
         {ph === 3 && "Then they offer the same tokens back, higher."}
-        {ph === 4 && "The fund fills at 8.39 to 8.41 instead of 8.35. That's front-running."}
+        {ph === 4 && "The fund pays up to 8.41 instead of 8.35. That's front-running."}
         {ph === 5 && "Size on a public book is a signal."}
       </p>
       <span className="illus">Illustration · not live data</span>
